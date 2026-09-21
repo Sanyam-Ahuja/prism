@@ -292,3 +292,22 @@ def test_corrupt_catalog_metadata_is_not_copied():
     for i, e in enumerate(r.entries):
         if e["id"] in {"DL-0294", "DL-0295"}:
             assert e["message"] not in r.searchable[i]
+
+
+def test_anchor_drift_is_detected(tmp_path):
+    """A repointed step reference must fail the build, not pass silently.
+
+    Step indices are positions in the segmenter output; changing is_actionable
+    renumbers them. Without anchors a skeleton would keep building, selecting
+    different steps than it was authored against.
+    """
+    import hashlib
+
+    from scripts.compile_plans import AnchorDrift, _check_anchors
+
+    good = "Navigate to and open Settings."
+    g = {"steps": [1], "anchors": [hashlib.sha1(good.encode()).hexdigest()[:8]]}
+    _check_anchors(g, [good], "doc", "action")          # matching: no raise
+
+    with pytest.raises(AnchorDrift):
+        _check_anchors(g, ["Tap something completely different."], "doc", "action")

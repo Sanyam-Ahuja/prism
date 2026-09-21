@@ -62,15 +62,16 @@ Rules:
 - category: "auto" if the steps change a Settings screen, "critical" for restart /
   safe mode / factory reset, "manual" for physical work or a service visit.
 - "screen" is REQUIRED on every action. For an auto action name the Settings
-  screen in catalog style: "enable touch sensitivity", "open the navigation bar
-  settings page", "adjust the screen timeout value". For manual and critical
+  screen in catalog style, using the wording of the document's own domain:
+  "enable touch sensitivity", "enable adaptive battery", "open the camera
+  settings page", "adjust the motion smoothness value". For manual and critical
   actions use an empty string "".
 - "benefit": 3 to 5 words, lower case, starting with a base-form verb
   ("improve touch response", not "Improves touch sensitivity"). No "It will".
 - Produce at most 6 actions. Merge steps that share one screen.
 - Name the SPECIFIC screen, never a parent menu. Write "enable touch sensitivity",
-  not "display settings". Write "open the navigation bar settings page", not
-  "settings".
+  not "display settings". Write "enable adaptive battery", not "battery settings".
+  Write "open the navigation bar settings page", not "settings".
 - "title": 2 to 3 words naming the issue.
 - "topic": 1 to 2 words for the plan heading.
 

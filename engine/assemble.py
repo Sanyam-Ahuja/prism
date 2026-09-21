@@ -31,12 +31,26 @@ _PROPER = {"samsung", "galaxy", "bixby", "android", "gmail", "wi-fi", "usb",
            "sim", "ldi", "qr", "hdr", "tv", "pin"}
 
 
+# Explicit in-Settings navigation. Without this guard the manual keyword table is
+# too blunt across domains: a Battery step like "Go to Settings, tap Battery, and
+# enable fast charging when a charger is connected" matches /charger/ and would be
+# demoted to manual, losing its deeplink to G13.
+_SETTINGS_CUE = re.compile(
+    r"\b(?:navigate to and open settings|go to settings|open settings|"
+    r"tap (?:on )?(?:settings|display|battery|apps|connections|general management)|"
+    r"toggle|switch next to|select the switch)\b", re.I)
+
+
 def categorize(proposed: str, step_text: str) -> str:
-    """Assign a category. Keyword evidence in the steps overrides the proposal."""
+    """Assign a category. Keyword evidence in the steps overrides the proposal.
+
+    Precedence: critical > (manual unless the step is clearly in-Settings) >
+    whatever the extractor proposed.
+    """
     blob = step_text or ""
     if _CRITICAL.search(blob):
         return "critical"
-    if _MANUAL.search(blob):
+    if _MANUAL.search(blob) and not _SETTINGS_CUE.search(blob):
         return "manual"
     return proposed if proposed in CATEGORY_RANK else "manual"
 

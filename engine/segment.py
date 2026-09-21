@@ -32,6 +32,13 @@ _IMPERATIVE_VERBS = {
     "let", "keep", "set", "adjust", "change", "enter", "type", "sign", "log",
     "close", "exit", "return", "repeat", "perform", "run", "start", "stop", "use",
     "find", "locate", "search", "scan", "boot", "power", "place", "put", "hold",
+    # Added during the four-domain audit: the original list was written while
+    # reading Display documents, so Battery/Camera/Performance instructions were
+    # silently dropped as non-actionable.
+    "optimize", "optimise", "calibrate", "recalibrate", "recharge", "cool",
+    "force", "limit", "restrict", "launch", "record", "capture", "focus",
+    "zoom", "wipe", "pause", "resume", "reduce", "increase", "lower", "raise",
+    "free", "end", "kill", "unload", "cache", "defragment", "refresh",
 }
 
 # Lead-ins that introduce a following list rather than instructing anything.

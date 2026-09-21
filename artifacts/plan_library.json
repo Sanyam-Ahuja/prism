@@ -597,7 +597,7 @@
          "originalType": "offURL"
         },
         "steps": [
-         "Disable Super steady mode."
+         "Increase the lighting in your scene."
         ],
         "validationDeeplink": {
          "deeplink": "bixby://masked/val/c949ff4945",
@@ -614,8 +614,8 @@
        {
         "actionableDeeplink": null,
         "steps": [
-         "Adjust shutter speed in Pro Video mode.",
-         "Try adjusting the shutter speed to a slower setting until the flickering disappears."
+         "Disable Super steady mode.",
+         "Adjust shutter speed in Pro Video mode."
         ],
         "validationDeeplink": null
        }
@@ -839,8 +839,8 @@
          "originalType": "onClickURL"
         },
         "steps": [
-         "Go to Settings, tap Display, and then tap Navigation bar.",
-         "Select Buttons to turn off full screen gestures."
+         "If you suspect this is the case, please try using a different, undamaged charger.",
+         "Go to Settings, tap Display, and then tap Navigation bar."
         ],
         "validationDeeplink": {
          "deeplink": "bixby://masked/val/d8310c1b7d",
@@ -865,13 +865,13 @@
      },
      {
       "actionName": "Try a Different Charger",
-      "category": "manual",
+      "category": "critical",
       "description": "It will rule out a faulty charger",
       "stepGroups": [
        {
         "actionableDeeplink": null,
         "steps": [
-         "If you suspect this is the case, please try using a different, undamaged charger."
+         "If the touchscreen is completely unresponsive, you can force a restart by pressing and holding the Volume down button and the Power button (or Side button) simultaneously for about 10 seconds."
         ],
         "validationDeeplink": null
        }
@@ -885,9 +885,9 @@
        {
         "actionableDeeplink": null,
         "steps": [
+         "Check for updates for any third-party apps you use, as these can sometimes affect gesture customization.",
          "Press and hold the Power button (or Side button) and the Volume down button at the same time.",
-         "Swipe down from the top of the screen with two fingers and tap the Power icon.",
-         "Touch and hold Power off, then tap Safe mode."
+         "Swipe down from the top of the screen with two fingers and tap the Power icon."
         ],
         "validationDeeplink": null
        }
@@ -906,13 +906,13 @@
          "originalType": "onClickURL"
         },
         "steps": [
+         "Touch and hold Power off, then tap Safe mode.",
          "Navigate to and open Settings.",
          "Tap General management.",
          "Tap Reset.",
          "Tap Factory data reset.",
          "Swipe to and tap Reset.",
-         "Tap Delete all.",
-         "Enter your Samsung account credentials to complete the reset."
+         "Tap Delete all."
         ],
         "validationDeeplink": {
          "deeplink": "bixby://masked/val/8e8eb09d57",

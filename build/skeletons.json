@@ -15,6 +15,9 @@
               "screen": null,
               "steps": [
                 1
+              ],
+              "anchors": [
+                "85a3e012"
               ]
             }
           ]
@@ -31,6 +34,12 @@
                 3,
                 4,
                 5
+              ],
+              "anchors": [
+                "1802efe7",
+                "776f1105",
+                "e46e55b7",
+                "5d86342a"
               ]
             }
           ]
@@ -48,6 +57,13 @@
                 8,
                 9,
                 10
+              ],
+              "anchors": [
+                "9591c5ca",
+                "2cbbfef5",
+                "86be6aca",
+                "333fd702",
+                "a29c904e"
               ]
             },
             {
@@ -58,6 +74,13 @@
                 13,
                 14,
                 15
+              ],
+              "anchors": [
+                "9591c5ca",
+                "2cbbfef5",
+                "86be6aca",
+                "333fd702",
+                "9f385cf3"
               ]
             }
           ]
@@ -75,6 +98,13 @@
                 18,
                 19,
                 20
+              ],
+              "anchors": [
+                "1cf15708",
+                "cdc865b8",
+                "c5f67727",
+                "5a8f065f",
+                "0cbbea14"
               ]
             }
           ]
@@ -112,6 +142,14 @@
                 4,
                 5,
                 6
+              ],
+              "anchors": [
+                "d99522c0",
+                "b7a34d14",
+                "b0e53c01",
+                "abb031ba",
+                "d0bce4b0",
+                "3c5def70"
               ]
             }
           ]
@@ -125,6 +163,9 @@
               "screen": null,
               "steps": [
                 9
+              ],
+              "anchors": [
+                "59a8964d"
               ]
             }
           ]
@@ -139,6 +180,10 @@
               "steps": [
                 7,
                 8
+              ],
+              "anchors": [
+                "1677eb1e",
+                "5ea32104"
               ]
             }
           ]
@@ -153,6 +198,10 @@
               "steps": [
                 10,
                 11
+              ],
+              "anchors": [
+                "51786aaf",
+                "1429b7bf"
               ]
             }
           ]
@@ -185,6 +234,9 @@
               "screen": "open the fingerprint recognition settings page",
               "steps": [
                 1
+              ],
+              "anchors": [
+                "2bd8aced"
               ]
             }
           ]
@@ -198,6 +250,9 @@
               "screen": "open the screen lock and biometrics settings page",
               "steps": [
                 2
+              ],
+              "anchors": [
+                "d567cf8c"
               ]
             }
           ]
@@ -232,6 +287,11 @@
                 1,
                 2,
                 3
+              ],
+              "anchors": [
+                "beee2055",
+                "067e4654",
+                "4641b15c"
               ]
             }
           ]
@@ -265,6 +325,10 @@
               "steps": [
                 8,
                 9
+              ],
+              "anchors": [
+                "f78dfe98",
+                "54a60be2"
               ]
             }
           ]
@@ -279,6 +343,10 @@
               "steps": [
                 1,
                 17
+              ],
+              "anchors": [
+                "46e8c0cd",
+                "f6ba0809"
               ]
             }
           ]
@@ -293,6 +361,10 @@
               "steps": [
                 23,
                 24
+              ],
+              "anchors": [
+                "688011de",
+                "f900fdac"
               ]
             }
           ]
@@ -309,6 +381,12 @@
                 4,
                 5,
                 14
+              ],
+              "anchors": [
+                "7905b35e",
+                "900a47bf",
+                "91dc0eee",
+                "e6fd6889"
               ]
             }
           ]
@@ -342,6 +420,10 @@
               "steps": [
                 30,
                 31
+              ],
+              "anchors": [
+                "e4b89f7e",
+                "58d08db2"
               ]
             }
           ]
@@ -355,6 +437,9 @@
               "screen": "adjust the screen timeout to a longer value",
               "steps": [
                 28
+              ],
+              "anchors": [
+                "e3650070"
               ]
             }
           ]
@@ -372,6 +457,13 @@
                 7,
                 8,
                 9
+              ],
+              "anchors": [
+                "735fca51",
+                "f6038717",
+                "bc52250e",
+                "63dc0a98",
+                "3d1d1f7e"
               ]
             }
           ]
@@ -387,6 +479,11 @@
                 22,
                 23,
                 24
+              ],
+              "anchors": [
+                "47772eb1",
+                "5c13c456",
+                "d58a8d83"
               ]
             }
           ]
@@ -422,6 +519,12 @@
                 2,
                 3,
                 4
+              ],
+              "anchors": [
+                "92c6325d",
+                "6d8b7438",
+                "1963fa22",
+                "2193dd92"
               ]
             }
           ]
@@ -454,6 +557,9 @@
               "screen": "disable Super steady video stabilization",
               "steps": [
                 1
+              ],
+              "anchors": [
+                "87b57a5d"
               ]
             }
           ]
@@ -468,6 +574,10 @@
               "steps": [
                 2,
                 3
+              ],
+              "anchors": [
+                "4051f271",
+                "faa53d15"
               ]
             }
           ]
@@ -500,6 +610,9 @@
               "screen": null,
               "steps": [
                 1
+              ],
+              "anchors": [
+                "675eacf0"
               ]
             }
           ]
@@ -533,6 +646,10 @@
               "steps": [
                 3,
                 4
+              ],
+              "anchors": [
+                "8890d985",
+                "95bfe08a"
               ]
             }
           ]
@@ -546,6 +663,9 @@
               "screen": null,
               "steps": [
                 8
+              ],
+              "anchors": [
+                "49b14edc"
               ]
             }
           ]
@@ -560,6 +680,10 @@
               "steps": [
                 1,
                 2
+              ],
+              "anchors": [
+                "bf324a60",
+                "d823fbd4"
               ]
             }
           ]
@@ -574,6 +698,10 @@
               "steps": [
                 6,
                 7
+              ],
+              "anchors": [
+                "6ee35399",
+                "2a12ba66"
               ]
             }
           ]
@@ -591,6 +719,13 @@
                 12,
                 13,
                 14
+              ],
+              "anchors": [
+                "128b27f5",
+                "51ed994a",
+                "86f77225",
+                "3c099d9b",
+                "519eee23"
               ]
             }
           ]
@@ -624,6 +759,10 @@
               "steps": [
                 2,
                 3
+              ],
+              "anchors": [
+                "80ea3242",
+                "51797c33"
               ]
             }
           ]
@@ -638,6 +777,10 @@
               "steps": [
                 8,
                 9
+              ],
+              "anchors": [
+                "bbaed2a5",
+                "8471806f"
               ]
             }
           ]
@@ -651,6 +794,9 @@
               "screen": null,
               "steps": [
                 1
+              ],
+              "anchors": [
+                "69c17585"
               ]
             }
           ]
@@ -664,6 +810,9 @@
               "screen": null,
               "steps": [
                 7
+              ],
+              "anchors": [
+                "9cacd58c"
               ]
             }
           ]
@@ -679,6 +828,11 @@
                 11,
                 12,
                 13
+              ],
+              "anchors": [
+                "22a4b0ba",
+                "a64a0836",
+                "9723bf12"
               ]
             }
           ]
@@ -698,6 +852,15 @@
                 18,
                 19,
                 20
+              ],
+              "anchors": [
+                "5ce7913c",
+                "91331c33",
+                "3e6be1be",
+                "a757cf52",
+                "4b171e2e",
+                "3084ecef",
+                "3c099d9b"
               ]
             }
           ]
@@ -716,5 +879,6 @@
         "How can I fix delayed touch response on a Galaxy phone screen?"
       ]
     }
-  ]
+  ],
+  "_anchors_note": "Each stepGroup carries a sha1-prefix per referenced step, captured when the skeleton was authored. compile_plans.py verifies them: step indices are positions in the segmenter output, so any change to is_actionable renumbers candidates and would otherwise silently repoint every skeleton to different steps. The build fails loudly instead."
 }

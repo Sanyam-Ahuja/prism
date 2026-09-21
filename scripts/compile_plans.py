@@ -9,6 +9,7 @@ Fails the build on any unresolved blocking gate: a dirty artifact must never shi
 """
 from __future__ import annotations
 
+import hashlib
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -26,6 +27,28 @@ ART = "artifacts"
 TAU_LINK = float(os.environ.get("PRISM_TAU_LINK", "0.45"))
 
 
+class AnchorDrift(RuntimeError):
+    """A skeleton's step indices no longer point at the steps they were authored against."""
+
+
+def _check_anchors(g: dict, steps: list[str], doc: str, action: str) -> None:
+    """Fail the build if segmentation renumbering repointed a step reference.
+
+    Step indices are positions in the segmenter's candidate list. Changing
+    is_actionable inserts or removes candidates and shifts every later index, so
+    without this check a skeleton would silently start selecting different steps.
+    """
+    anchors = g.get("anchors")
+    if not anchors:
+        return
+    actual = [hashlib.sha1(t.encode()).hexdigest()[:8] for t in steps]
+    if actual != anchors:
+        raise AnchorDrift(
+            f"{doc} / {action}: step indices {g['steps']} no longer resolve to the "
+            f"authored steps (anchors {anchors} != {actual}). Re-derive the skeleton "
+            f"against the current segmenter output.")
+
+
 def build_action(sk_action: dict, seg, resolver: DeeplinkResolver) -> dict | None:
     """Expand one skeleton action into a schema-shaped Action."""
     groups = []
@@ -34,6 +57,7 @@ def build_action(sk_action: dict, seg, resolver: DeeplinkResolver) -> dict | Non
         steps = seg.texts(g["steps"])
         if not steps:
             continue
+        _check_anchors(g, steps, seg.title, sk_action.get("name", "?"))
         all_text.append(" ".join(steps))
         groups.append({"screen": g.get("screen"), "steps": steps})
     if not groups:
