@@ -1,0 +1,22 @@
+[
+  {"descriptor": "stop the side bar from popping out at the edge of the screen", "expect": "DL-0095"},
+  {"descriptor": "make the screen stay awake longer before it sleeps", "expect": "DL-0220"},
+  {"descriptor": "let the phone save my stuff to the cloud automatically", "expect": "DL-0542"},
+  {"descriptor": "make everything on screen appear larger", "expect": "DL-0229"},
+  {"descriptor": "turn on smoother scrolling with a higher refresh rate", "expect": "DL-0228"},
+  {"descriptor": "make the screen respond better while using a case", "expect": "DL-0126"},
+  {"descriptor": "stop the display from dimming by itself", "expect": "DL-0020"},
+  {"descriptor": "have the phone reboot itself on a schedule", "expect": "DL-0419"},
+  {"descriptor": "get rid of the floating pen shortcut button", "expect": "DL-0432"},
+  {"descriptor": "let me run two apps side by side", "expect": "DL-0168"},
+  {"descriptor": "make the display even brighter outdoors", "expect": "DL-0105"},
+  {"descriptor": "dim the screen beyond the normal minimum", "expect": "DL-0191"},
+  {"descriptor": "switch the clock to military time", "expect": "DL-0001"},
+  {"descriptor": "let me control the pointer using the number pad", "expect": "DL-0008"},
+  {"descriptor": "turn off sharing my usage info with Samsung", "expect": "DL-0083"},
+  {"descriptor": "put the phone into a stripped-down diagnostic startup", "expect": "DUMMY"},
+  {"descriptor": "make the picture flip when I tilt the phone sideways", "expect": "DUMMY"},
+  {"descriptor": "throw my phone screen onto the television", "expect": "DUMMY"},
+  {"descriptor": "see if there is newer system firmware available", "expect": "DUMMY"},
+  {"descriptor": "wipe the stored temporary files for an application", "expect": "DUMMY"}
+]

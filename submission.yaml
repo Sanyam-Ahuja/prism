@@ -1,0 +1,17 @@
+team: "TODO-your-team-name"
+theme: "Theme 02 - Smart Guided Troubleshooting Engine"
+entry_point: "api.main:app"          # ASGI app; also runnable via scripts/run_batch.py
+python: "3.12"
+requirements:
+  - fastapi
+  - uvicorn
+  - pydantic
+  - sentence-transformers
+  - rank-bm25
+  - numpy
+  - httpx
+env: []                              # no hosted API keys: runtime inference is local
+models:
+  build_tier: "Claude Opus 5 (one-time offline plan compilation)"
+  runtime_extractor: "ollama/gemma3:4b (override with PRISM_EXTRACT_MODEL)"
+  embeddings: "BAAI/bge-small-en-v1.5"

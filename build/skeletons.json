@@ -1,0 +1,720 @@
+{
+  "_readme": "Stage-2 extractor output: the build-tier LLM's contribution to the pipeline. Actions select SOURCE STEP INDICES (ADR-001), never step text, so no step can exist that is absent from the SIIS document. Screen descriptors are written in catalog register (ADR-002) because Stage 3 resolves that register at ~100% precision; free-form phrasing degrades to ~50%. Committed because LLM calls are not reproducible; everything downstream of this file is deterministic.",
+  "skeletons": [
+    {
+      "doc": "Email server not responding on Samsung phone or tablet",
+      "topic": "Email Connection",
+      "title": "Email connection failure",
+      "actions": [
+        {
+          "name": "Check Email On Computer",
+          "category": "manual",
+          "benefit": "confirm the account works elsewhere",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Verify Network Connection",
+          "category": "auto",
+          "benefit": "restore internet connectivity for email",
+          "stepGroups": [
+            {
+              "screen": "open the Wi-Fi connection settings page",
+              "steps": [
+                2,
+                3,
+                4,
+                5
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Clear Email App Storage",
+          "category": "auto",
+          "benefit": "clear corrupted cached email data",
+          "stepGroups": [
+            {
+              "screen": "open the application storage settings page",
+              "steps": [
+                6,
+                7,
+                8,
+                9,
+                10
+              ]
+            },
+            {
+              "screen": "open the application storage settings page",
+              "steps": [
+                11,
+                12,
+                13,
+                14,
+                15
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Restart In Safe Mode",
+          "category": "critical",
+          "benefit": "identify a conflicting third-party app",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                16,
+                17,
+                18,
+                19,
+                20
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Samsung tablet screen flashes then goes blank when I open an email in Gmail.",
+        "why does my tablet display go black every time i tap an email?",
+        "tablet screen blank opening gmail email",
+        "Whenever I try to read a message in Gmail on my Galaxy tablet, the screen flickers and then turns completely dark.",
+        "Email app causes the display to blank out intermittently on my Samsung tablet.",
+        "screen goes blank gmail tablet samsung flashing",
+        "This is really frustrating - my tablet screen keeps dying every single time I open an email!",
+        "The display on my A115G blanks momentarily and recovers when accessing Gmail messages.",
+        "tablet screen flashes blank when opening emial",
+        "What should I do if my Samsung tablet's screen goes dark each time I open a mail?"
+      ]
+    },
+    {
+      "doc": "Blank or black display on a Samsung phone or tablet",
+      "topic": "Blank Screen",
+      "title": "Blank screen display",
+      "actions": [
+        {
+          "name": "Inspect For Physical Damage",
+          "category": "manual",
+          "benefit": "detect liquid or impact damage",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Charge The Device",
+          "category": "manual",
+          "benefit": "restore a fully depleted battery",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Force Restart Device",
+          "category": "critical",
+          "benefit": "recover an unresponsive frozen device",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                7,
+                8
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Attempt To Power On",
+          "category": "critical",
+          "benefit": "confirm the device powers on",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                10,
+                11
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy phone screen is completely black and will not turn on at all.",
+        "galaxy s22 screen blank white no text appears",
+        "My Samsung Galaxy went totally dark on its own and shows nothing when I press power.",
+        "phone screen black wont turn on",
+        "The display on my Galaxy is entirely blank even though the phone still rings and vibrates.",
+        "why is my samsung screen completely black but the phone still works?",
+        "Screen went black by itself after about a month and displays nothing whatsoever.",
+        "I am so done with this - my phone screen is just dead black and nothing I do fixes it.",
+        "my galaxy screen is blak and wont come on",
+        "What can I do when my Samsung tablet's display stays completely dark on startup?"
+      ]
+    },
+    {
+      "doc": "Some things to check first",
+      "topic": "Screen Lock",
+      "title": "Fingerprint recognition issue",
+      "actions": [
+        {
+          "name": "Improve Fingerprint Accuracy",
+          "category": "auto",
+          "benefit": "improve recognition through a protector",
+          "stepGroups": [
+            {
+              "screen": "open the fingerprint recognition settings page",
+              "steps": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Open Screen Lock Settings",
+          "category": "auto",
+          "benefit": "reach the biometric security options",
+          "stepGroups": [
+            {
+              "screen": "open the screen lock and biometrics settings page",
+              "steps": [
+                2
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy Z Flip screen went completely black and I cannot transfer my data.",
+        "flip 7 screen black cannot use smart switch",
+        "My foldable's display is half black on one side while the other half works fine.",
+        "galaxy flip screen half dark one side",
+        "The screen on my Z Flip is dead so I am unable to see or interact with anything.",
+        "why is half of my galaxy flip screen completely black?",
+        "One side of my Flip 6 display is totally dark and I cannot use the phone normally.",
+        "Seriously frustrated, half my foldable screen is just black and unusable.",
+        "my flip screen is blak on one side",
+        "What should I do when part of my Galaxy foldable screen stops displaying?"
+      ]
+    },
+    {
+      "doc": "Transfer Secure folder with Smart Switch",
+      "topic": "Smart Switch Transfer",
+      "title": "Smart switch transfer",
+      "actions": [
+        {
+          "name": "Open Smart Switch App",
+          "category": "auto",
+          "benefit": "start the device transfer process",
+          "stepGroups": [
+            {
+              "screen": "open the Smart Switch transfer settings page",
+              "steps": [
+                1,
+                2,
+                3
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy tablet screen stays blank when scanning the Smart Switch QR code.",
+        "tablet blank screen smart switch qr code transfer",
+        "The display goes dark while I try to transfer data from my S25 using Smart Switch.",
+        "why does my tablet screen go blank during smart switch transfer?",
+        "I cannot complete a Smart Switch transfer because the tablet screen shows nothing.",
+        "Screen stays completely blank when I attempt to scan the QR code for data transfer.",
+        "smart switch qr scan blank screen galaxy tablet",
+        "So annoying - my tablet just shows a blank screen and the transfer never starts.",
+        "tablet screen blank when scaning qr code smart swich",
+        "How do I fix a blank tablet display that blocks Smart Switch data transfer?"
+      ]
+    },
+    {
+      "doc": "Use Multi window and App pairs on your Galaxy phone or tablet",
+      "topic": "Multi Window",
+      "title": "Multi window setup",
+      "actions": [
+        {
+          "name": "Enable Multi Window Gestures",
+          "category": "auto",
+          "benefit": "enable split screen swipe gestures",
+          "stepGroups": [
+            {
+              "screen": "enable multi window for all apps",
+              "steps": [
+                8,
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Customize Edge Panel",
+          "category": "auto",
+          "benefit": "customize the panel shortcuts shown",
+          "stepGroups": [
+            {
+              "screen": "enable Edge panels",
+              "steps": [
+                1,
+                17
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Remove Apps Edge Shortcuts",
+          "category": "auto",
+          "benefit": "remove unwanted panel shortcuts quickly",
+          "stepGroups": [
+            {
+              "screen": "disable show as edge icon",
+              "steps": [
+                23,
+                24
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Use Split Screen View",
+          "category": "manual",
+          "benefit": "show two apps simultaneously",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                3,
+                4,
+                5,
+                14
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy S25 has a floating circle hovering on screen and I want to remove it.",
+        "how do i get rid of the floating shortcut bubble on my galaxy?",
+        "There is a persistent floating button on my display giving me quick shortcuts.",
+        "remove floating circle overlay galaxy s25 shortcuts",
+        "My tablet screen is dark and only three app icons light up while the rest will not open.",
+        "Only a few app icons work on my tablet and the rest of the screen stays dark.",
+        "floating bubble shortcuts screen samsung remove",
+        "This floating circle thing is driving me crazy, how do I turn it off?",
+        "floting circle on my galaxy screen wont go away",
+        "What is the hovering shortcut circle on my Galaxy and how do I disable it?"
+      ]
+    },
+    {
+      "doc": "Screen mirroring to your Samsung TV",
+      "topic": "Screen Mirroring",
+      "title": "Screen mirroring setup",
+      "actions": [
+        {
+          "name": "Adjust Phone Aspect Ratio",
+          "category": "auto",
+          "benefit": "fill the television screen properly",
+          "stepGroups": [
+            {
+              "screen": "adjust the screen zoom value",
+              "steps": [
+                30,
+                31
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Change Screen Timeout Settings",
+          "category": "auto",
+          "benefit": "keep the display awake longer",
+          "stepGroups": [
+            {
+              "screen": "adjust the screen timeout to a longer value",
+              "steps": [
+                28
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Connect With Smart View",
+          "category": "manual",
+          "benefit": "mirror your phone to television",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                4,
+                6,
+                7,
+                8,
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Restart Device And Television",
+          "category": "critical",
+          "benefit": "clear a stalled mirroring connection",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                22,
+                23,
+                24
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My new Samsung phone screen stays small and does not fill the whole display.",
+        "phone screen doesnt fill whole display stays small",
+        "The picture on my Galaxy will not expand to use the entire screen area.",
+        "why is my samsung display not filling the full screen?",
+        "I cannot make my new phone's main screen expand to full size.",
+        "Image appears small and letterboxed instead of filling my Samsung display.",
+        "samsung screen small not full size new phone",
+        "Really odd - my brand new phone screen just won't stretch to fill the display.",
+        "my new samsung screen stays smal and wont expand",
+        "How do I make the display on my new Galaxy phone fill the entire screen?"
+      ]
+    },
+    {
+      "doc": "Access your Galaxy phone's data if the screen does not respond",
+      "topic": "Data Recovery",
+      "title": "Unresponsive screen recovery",
+      "actions": [
+        {
+          "name": "Connect To External Display",
+          "category": "manual",
+          "benefit": "back up your inaccessible data",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                1,
+                2,
+                3,
+                4
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy Flip inner screen stopped working and shows no image or touch response.",
+        "flip 7 inner screen dead outer cover screen works",
+        "The main display on my foldable is blank while the cover screen still functions.",
+        "why did my galaxy flip inner screen stop working by itself?",
+        "Inner foldable screen shows nothing and does not respond to touch at all.",
+        "My Flip's main screen died on its own but the outside display is fine.",
+        "inner screen not working galaxy flip cover screen ok",
+        "Unbelievable - the inner screen just died by itself and I can't use the phone.",
+        "my flip inner screen stoped working by itself",
+        "What can I do if my Galaxy foldable's inner display stops working entirely?"
+      ]
+    },
+    {
+      "doc": "Screen flickers when using the Camera on a Galaxy phone",
+      "topic": "Camera Flicker",
+      "title": "Camera screen flicker",
+      "actions": [
+        {
+          "name": "Disable Super Steady Mode",
+          "category": "auto",
+          "benefit": "stop flickering during video recording",
+          "stepGroups": [
+            {
+              "screen": "disable Super steady video stabilization",
+              "steps": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Adjust Pro Video Shutter Speed",
+          "category": "manual",
+          "benefit": "eliminate flicker from artificial lighting",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                2,
+                3
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy Z Flip 6 screen flickers and goes blank whenever I open the phone.",
+        "flip 6 screen flickers goes blank when opened",
+        "The display keeps flickering and blanking so I cannot access my settings.",
+        "why does my galaxy screen flicker and turn black when i unfold it?",
+        "Screen flashes and blanks every time I open my foldable phone.",
+        "My Flip's display flickers constantly and then goes dark, making it unusable.",
+        "screen flicker blank galaxy flip foldable open",
+        "So frustrating - the screen flickers and dies every time I open my phone.",
+        "my flip 6 screen flikers and goes blank",
+        "How do I stop my Galaxy foldable screen from flickering and going blank?"
+      ]
+    },
+    {
+      "doc": "Cracked or bleeding screen on Galaxy phone or tablet",
+      "topic": "Screen Damage",
+      "title": "Cracked screen damage",
+      "actions": [
+        {
+          "name": "Schedule Screen Repair Service",
+          "category": "manual",
+          "benefit": "repair using genuine Samsung parts",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy phone screen is completely cracked and I cannot use the device.",
+        "galaxy screen totally cracked cannot use phone",
+        "The display on my Samsung is badly shattered across the whole front.",
+        "my z flip screen is cracked right where it folds and touch doesnt work",
+        "Screen is cracked at the fold and parts of the touch no longer respond.",
+        "why is my galaxy screen cracked along the crease again?",
+        "cracked screen galaxy flip fold crease touch not working",
+        "This is the second time my foldable cracked at the fold, I can barely see anything.",
+        "my galaxy screen is craked completly",
+        "What are my repair options for a cracked Samsung Galaxy screen?"
+      ]
+    },
+    {
+      "doc": "Screen does not rotate on Galaxy phone or tablet",
+      "topic": "Screen Rotation",
+      "title": "Screen rotation failure",
+      "actions": [
+        {
+          "name": "Adjust Screen Orientation Settings",
+          "category": "auto",
+          "benefit": "switch between portrait and landscape",
+          "stepGroups": [
+            {
+              "screen": "open the screen orientation settings page",
+              "steps": [
+                3,
+                4
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Test Application Rotation",
+          "category": "manual",
+          "benefit": "confirm rotation works inside apps",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                8
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Inspect Screen For Damage",
+          "category": "manual",
+          "benefit": "detect cracks causing the fault",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                1,
+                2
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Restart The Device",
+          "category": "critical",
+          "benefit": "clear a temporary system glitch",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                6,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Perform Factory Data Reset",
+          "category": "critical",
+          "benefit": "restore the device to defaults",
+          "stepGroups": [
+            {
+              "screen": "open the factory reset settings page",
+              "steps": [
+                9,
+                11,
+                12,
+                13,
+                14
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy A17 screen looks distorted right after I received the phone.",
+        "galaxy a17 screen distorted need diagnostic test",
+        "The display on my brand new Samsung appears warped and I want it tested.",
+        "why does my new galaxy screen look distorted?",
+        "Screen image is distorted on a phone I just received and needs diagnosis.",
+        "My new A17's display looks wrong and I would like to run a diagnostic.",
+        "distorted screen new samsung galaxy diagnostic",
+        "Brand new phone and the screen already looks distorted, what gives?",
+        "my new galaxy screen looks distorded",
+        "How do I run a display diagnostic on a newly received Galaxy phone?"
+      ]
+    },
+    {
+      "doc": "Touchscreen issues on a Galaxy phone or tablet",
+      "topic": "Touchscreen Response",
+      "title": "Touch response delay",
+      "actions": [
+        {
+          "name": "Enable Touch Sensitivity",
+          "category": "auto",
+          "benefit": "improve response through screen protectors",
+          "stepGroups": [
+            {
+              "screen": "enable touch sensitivity",
+              "steps": [
+                2,
+                3
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Configure Navigation Bar Buttons",
+          "category": "auto",
+          "benefit": "disable full screen gesture navigation",
+          "stepGroups": [
+            {
+              "screen": "open the navigation bar settings page",
+              "steps": [
+                8,
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Remove Damaged Screen Protector",
+          "category": "manual",
+          "benefit": "remove debris blocking touch input",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Try A Different Charger",
+          "category": "manual",
+          "benefit": "rule out a faulty charger",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Restart In Safe Mode",
+          "category": "critical",
+          "benefit": "identify a conflicting third-party app",
+          "stepGroups": [
+            {
+              "screen": null,
+              "steps": [
+                11,
+                12,
+                13
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Perform Factory Data Reset",
+          "category": "critical",
+          "benefit": "restore the device to defaults",
+          "stepGroups": [
+            {
+              "screen": "open the factory reset settings page",
+              "steps": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20
+              ]
+            }
+          ]
+        }
+      ],
+      "query_variations": [
+        "My Galaxy S22 screen inputs are delayed and touch responsiveness is laggy.",
+        "galaxy s22 touch laggy delayed screen input",
+        "There is a noticeable delay whenever I tap or swipe on my Samsung display.",
+        "why is my galaxy touchscreen so slow to respond?",
+        "Touch input lags badly and the screen takes a moment to register my taps.",
+        "My phone's touchscreen has become sluggish and unresponsive to quick gestures.",
+        "touchscreen lag delay samsung galaxy slow response",
+        "Incredibly annoying - there's a delay every single time I touch the screen.",
+        "my s22 tuchscreen is laggy and delayd",
+        "How can I fix delayed touch response on a Galaxy phone screen?"
+      ]
+    }
+  ]
+}
