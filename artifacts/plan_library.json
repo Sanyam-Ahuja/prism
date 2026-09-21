@@ -591,18 +591,14 @@
       "stepGroups": [
        {
         "actionableDeeplink": {
-         "deeplink": "bixby://masked/act/8e7291c1c0",
-         "description": "Disables Super HDR via device Settings on the device.",
-         "message": "Disable Super HDR",
-         "originalType": "offURL"
+         "deeplink": "bixby://dummy_positive",
+         "description": "Open the disable Super steady video stabilization on the device",
+         "message": "Disable Super Steady Video Stabilization"
         },
         "steps": [
          "Increase the lighting in your scene."
         ],
-        "validationDeeplink": {
-         "deeplink": "bixby://masked/val/c949ff4945",
-         "key": "Super HDR"
-        }
+        "validationDeeplink": null
        }
       ]
      },
@@ -690,19 +686,15 @@
       "stepGroups": [
        {
         "actionableDeeplink": {
-         "deeplink": "bixby://masked/act/1df92bd4bc",
-         "description": "Opens the Home screen settings settings page in device Settings on the device.",
-         "message": "View Home screen",
-         "originalType": "onClickURL"
+         "deeplink": "bixby://dummy_positive",
+         "description": "Open the open the screen orientation settings page on the device",
+         "message": "Open the Screen Orientation Settings Page"
         },
         "steps": [
          "Locate the screen orientation icon.",
          "If you need to change your screen's orientation setting, you can switch between Portrait, Landscape, or Auto rotate by tapping the screen orientation icon."
         ],
-        "validationDeeplink": {
-         "deeplink": "bixby://masked/val/c093d6f915",
-         "key": "Home screen"
-        }
+        "validationDeeplink": null
        }
       ]
      },

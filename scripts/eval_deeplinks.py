@@ -11,7 +11,7 @@ from engine.deeplink import DeeplinkResolver, DUMMY
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tau", type=float, default=0.45)
+    ap.add_argument("--tau", type=float, default=0.52)
     ap.add_argument("--dense", action="store_true")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--labels", default="tests/fixtures/deeplink_labels.json")

@@ -21,7 +21,7 @@ from validators.scrub import scrub_deep
 
 OLLAMA = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 MODEL = os.environ.get("PRISM_EXTRACT_MODEL", "gemma3:4b")
-TAU_LINK = float(os.environ.get("PRISM_TAU_LINK", "0.45"))
+TAU_LINK = float(os.environ.get("PRISM_TAU_LINK", "0.52"))
 TIMEOUT = float(os.environ.get("PRISM_EXTRACT_TIMEOUT", "30"))
 
 # Grammar-constrained decoding: unparseable output becomes impossible.

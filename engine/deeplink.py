@@ -202,7 +202,7 @@ class DeeplinkResolver:
         return [(self.entries[i], self._confidence(descriptor, i, sims, want))
                 for i in order[:k]]
 
-    def resolve(self, descriptor: str, tau: float = 0.45,
+    def resolve(self, descriptor: str, tau: float = 0.52,
                 allow_appliance: bool = False, debug: bool = False) -> Match:
         """Resolve a screen descriptor to a catalog entry, or fall back to dummy.
 
