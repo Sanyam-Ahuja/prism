@@ -1,0 +1,83 @@
+{
+  "_readme": "Hand-labelled ground truth for deeplink relevance (docs/RUBRIC.md). 'expect' is the catalog entry that should be returned, or DUMMY where the screen is genuinely absent from the catalog. 'verified' records the catalog evidence checked when labelling.",
+  "labels": [
+    {
+      "action": "Verify Network Connection",
+      "expect": "DL-0313",
+      "score": 1,
+      "verified": "DL-0313 'Opens the Wi-Fi settings page' is the exact target. We resolve DL-0513 'Intelligent Wi-Fi settings' - correct feature area, not the exact screen, so 1.0 under the rubric. Scoring the answer we happened to return as 2.0 would inflate the metric."
+    },
+    {
+      "action": "Improve Fingerprint Accuracy",
+      "expect": "DL-0551",
+      "score": 2,
+      "verified": "DL-0551 is the only fingerprint entry in the catalog"
+    },
+    {
+      "action": "Open Screen Lock Settings",
+      "expect": "DL-0153",
+      "score": 2,
+      "verified": "steps name Screen lock and biometrics; View Lock screen is the right area"
+    },
+    {
+      "action": "Open Smart Switch App",
+      "expect": "DUMMY",
+      "score": null,
+      "verified": "0 catalog entries match 'smart switch' - sanctioned placeholder"
+    },
+    {
+      "action": "Enable Multi Window Gestures",
+      "expect": "DL-0168",
+      "score": 1,
+      "verified": "steps target the Swipe for split screen toggle, absent; DL-0168 is the adjacent multi-window toggle"
+    },
+    {
+      "action": "Customize Edge Panel",
+      "expect": "DL-0096",
+      "score": 1,
+      "verified": "steps customise panel contents; only enable/disable Edge panels exists"
+    },
+    {
+      "action": "Remove Apps Edge Shortcuts",
+      "expect": "DL-0326",
+      "score": 1,
+      "verified": "correct feature area (Edge panels) but Disable Show as edge icon has a different effect"
+    },
+    {
+      "action": "Adjust Phone Aspect Ratio",
+      "expect": "DUMMY",
+      "score": 0,
+      "verified": "0 catalog entries match 'aspect ratio'; returning Adjust Screen zoom is a false positive where DUMMY was correct"
+    },
+    {
+      "action": "Change Screen Timeout Settings",
+      "expect": "DL-0220",
+      "score": 2,
+      "verified": "DL-0220 Adjust Timeout is the exact screen"
+    },
+    {
+      "action": "Disable Super Steady Mode",
+      "expect": "DUMMY",
+      "score": null,
+      "verified": "0 catalog entries match 'super steady' - sanctioned placeholder"
+    },
+    {
+      "action": "Adjust Screen Orientation Settings",
+      "expect": "DUMMY",
+      "score": null,
+      "verified": "0 catalog entries match auto-rotate / orientation - sanctioned placeholder"
+    },
+    {
+      "action": "Enable Touch Sensitivity",
+      "expect": "DL-0126",
+      "score": 2,
+      "verified": "exact match"
+    },
+    {
+      "action": "Configure Navigation Bar Buttons",
+      "expect": "DL-0339",
+      "score": 2,
+      "verified": "View Navigation bar is the exact screen named in the steps"
+    }
+  ]
+}

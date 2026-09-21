@@ -29,6 +29,8 @@ W_COV = 0.25
 W_POL = 0.20
 # Rank bonus for an entry whose originalType matches the descriptor's intent.
 POLARITY_RANK_BONUS = 0.010
+# Candidates re-scored by confidence before selection.
+SELECT_K = 10
 
 # Boilerplate present in nearly every catalog description. Left in, it dominates
 # BM25 term frequencies ("device" appears 1126x across 578 entries) and destroys
@@ -218,7 +220,15 @@ class DeeplinkResolver:
         if r is None:
             return Match(self.dummy, 0.0, True, "no candidate after filtering")
         order, sims, want = r
-        i = order[0]
+        # Select by confidence among the RRF top-K, not by rank alone.
+        # RRF orders candidates but carries no quality signal, so rank 1 can be
+        # worse than rank 5: for "open the Wi-Fi connection settings page" RRF put
+        # Notification Settings first (conf 0.626) while a WiFi entry sat at rank
+        # 5 with conf 0.749. Confidence is the quality signal, so it decides.
+        pool = order[:SELECT_K]
+        i = max(pool, key=lambda j: (self._confidence(descriptor, j, sims, want),
+                                     # deterministic tie-break, never insertion order
+                                     [-ord(c) for c in self.entries[j]["id"]]))
         conf = self._confidence(descriptor, i, sims, want)
 
         if debug:

@@ -14,9 +14,9 @@
       "stepGroups": [
        {
         "actionableDeeplink": {
-         "deeplink": "bixby://masked/act/c9ca763e0c",
-         "description": "Opens the Wi-Fi network notifications settings page in device Settings on the device.",
-         "message": "View Notification Settings",
+         "deeplink": "bixby://masked/act/12886ae633",
+         "description": "Opens the Intelligent Wi-Fi settings page in device Settings on the device.",
+         "message": "View WiFi Settings",
          "originalType": "onClickURL"
         },
         "steps": [
@@ -26,8 +26,8 @@
          "Go to Settings, tap Connections, and then tap Wi-Fi."
         ],
         "validationDeeplink": {
-         "deeplink": "bixby://masked/val/26333a38b6",
-         "key": "Wi-Fi network notifications"
+         "deeplink": "bixby://masked/val/bb94e0ebc2",
+         "key": "Intelligent Wi-Fi"
         }
        }
       ]

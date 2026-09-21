@@ -40,6 +40,26 @@ Regression suite: **31/31 passing**.
 
 ## 2. Accuracy Benchmarks
 
+Evaluated against the 11 compiled plans and their source documents. Rubric and
+per-item ground truth: `docs/RUBRIC.md`, `tests/fixtures/plan_deeplink_truth.json`.
+Reproduce with `python scripts/score_plans.py`.
+
+| Evaluation Metric | Scale / Anchor | Score |
+|---|---|---|
+| Step accuracy (completeness, correctness, ordering) | 0.0 – 3.0 | **2.92** |
+| Deeplink relevance (exact target screen vs. parent menu) | 0.0 – 2.0 | **1.40** |
+
+Step accuracy is high because ADR-001 makes steps structurally correct: they are
+indices into the source, so traceability and gate compliance are 1.00 on every
+plan. The 0.08 shortfall is completeness on the two largest documents (Multi
+window 0.69, Screen mirroring 0.56), where the plan deliberately uses a subset of
+a long source.
+
+Deeplink relevance is the real weakness and the number we would most want to
+improve. Of 13 `auto` actions: 5 score 2.0 (exact screen), 4 score 1.0 (right
+feature area, wrong screen — the parent-menu case PDF §6.2 penalises), 1 scores
+0.0, and 3 are sanctioned `dummy_positive` excluded from the mean (23%).
+
 ### 2.1 Deeplink resolution (Stage 3)
 
 Two hand-labelled sets. The split matters: Stage 3 consumes LLM-normalized
