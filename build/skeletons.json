@@ -556,10 +556,10 @@
             {
               "screen": "disable Super steady video stabilization",
               "steps": [
-                1
+                2
               ],
               "anchors": [
-                "87b57a5d"
+                "4051f271"
               ]
             }
           ]
@@ -572,12 +572,12 @@
             {
               "screen": null,
               "steps": [
-                2,
-                3
+                3,
+                4
               ],
               "anchors": [
-                "4051f271",
-                "faa53d15"
+                "faa53d15",
+                "ec995ecb"
               ]
             }
           ]
@@ -775,12 +775,12 @@
             {
               "screen": "open the navigation bar settings page",
               "steps": [
-                8,
-                9
+                9,
+                10
               ],
               "anchors": [
-                "bbaed2a5",
-                "8471806f"
+                "8471806f",
+                "c66a55c9"
               ]
             }
           ]
@@ -809,10 +809,10 @@
             {
               "screen": null,
               "steps": [
-                7
+                8
               ],
               "anchors": [
-                "9cacd58c"
+                "bbaed2a5"
               ]
             }
           ]
@@ -825,14 +825,14 @@
             {
               "screen": null,
               "steps": [
-                11,
                 12,
-                13
+                13,
+                14
               ],
               "anchors": [
-                "22a4b0ba",
                 "a64a0836",
-                "9723bf12"
+                "9723bf12",
+                "5ce7913c"
               ]
             }
           ]
@@ -845,22 +845,22 @@
             {
               "screen": "open the factory reset settings page",
               "steps": [
-                14,
                 15,
                 16,
                 17,
                 18,
                 19,
-                20
+                20,
+                21
               ],
               "anchors": [
-                "5ce7913c",
                 "91331c33",
                 "3e6be1be",
                 "a757cf52",
                 "4b171e2e",
                 "3084ecef",
-                "3c099d9b"
+                "3c099d9b",
+                "91032216"
               ]
             }
           ]

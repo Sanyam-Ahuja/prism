@@ -23,7 +23,7 @@ from engine.segment import segment
 from validators.gates import Ctx, blocking, load_ctx, validate_envelope
 from validators.scrub import scrub_deep
 
-ART = "artifacts"
+ART = os.environ.get("PRISM_ARTIFACT_DIR", "artifacts")
 TAU_LINK = float(os.environ.get("PRISM_TAU_LINK", "0.52"))
 
 

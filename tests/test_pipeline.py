@@ -262,36 +262,26 @@ def test_deeplink_resolution_is_deterministic():
         assert len(ids) == 1
 
 
-def test_compiled_artifacts_are_reproducible():
-    """ADR-003: artifacts must rebuild byte-for-byte from a clean checkout."""
-    import hashlib, shutil, subprocess
+def test_compiled_artifacts_are_reproducible(tmp_path):
+    """ADR-003: artifacts must rebuild byte-for-byte from a clean checkout.
+
+    Compiles into a temp directory. An earlier version of this test recompiled
+    into artifacts/ in place, so running the suite silently rewrote the shipped
+    artifacts - which is exactly how a corrupted rebuild escaped notice.
+    """
+    import hashlib
+    import os
+    import subprocess
+
     before = hashlib.sha256(open("artifacts/plan_library.json", "rb").read()).hexdigest()
-    shutil.copy("artifacts/plan_library.json", "/tmp/_plan_lib_backup.json")
-    subprocess.run([sys.executable, "scripts/compile_plans.py"], check=True,
-                   capture_output=True)
-    after = hashlib.sha256(open("artifacts/plan_library.json", "rb").read()).hexdigest()
+    env = dict(os.environ, PRISM_ARTIFACT_DIR=str(tmp_path))
+    r = subprocess.run([sys.executable, "scripts/compile_plans.py"],
+                       capture_output=True, env=env, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    after = hashlib.sha256((tmp_path / "plan_library.json").read_bytes()).hexdigest()
     assert before == after, "compile_plans.py is not reproducible"
-
-
-def test_matching_never_uses_the_masked_uri(monkeypatch):
-    """PDF 7.4: masked URIs are opaque tokens; match on metadata only."""
-    r = DeeplinkResolver("data/deeplinks.json")
-    for i, e in enumerate(r.entries):
-        assert e["deeplink"] not in r.searchable[i]
-        assert "bixby://" not in r.searchable[i]
-    # A query made of URI fragments must not retrieve its own entry.
-    target = next(e for e in r.entries if e["id"] == "DL-0542")
-    frag = target["deeplink"].rsplit("/", 1)[-1]
-    m = r.resolve(frag)
-    assert m.entry is None or m.entry["deeplink"] == DUMMY
-
-
-def test_corrupt_catalog_metadata_is_not_copied():
-    """DL-0294/0295 carry message 'Offurl'/'Onurl'; usable URI, unusable metadata."""
-    r = DeeplinkResolver("data/deeplinks.json")
-    for i, e in enumerate(r.entries):
-        if e["id"] in {"DL-0294", "DL-0295"}:
-            assert e["message"] not in r.searchable[i]
+    # The shipped artifacts must be untouched by running the test.
+    assert hashlib.sha256(open("artifacts/plan_library.json", "rb").read()).hexdigest() == before
 
 
 def test_anchor_drift_is_detected(tmp_path):
@@ -311,3 +301,24 @@ def test_anchor_drift_is_detected(tmp_path):
 
     with pytest.raises(AnchorDrift):
         _check_anchors(g, ["Tap something completely different."], "doc", "action")
+
+
+def test_matching_never_uses_the_masked_uri():
+    """PDF 7.4: masked URIs are opaque tokens; match on metadata only."""
+    r = DeeplinkResolver("data/deeplinks.json")
+    for i, e in enumerate(r.entries):
+        assert e["deeplink"] not in r.searchable[i]
+        assert "bixby://" not in r.searchable[i]
+    # A query made of URI fragments must not retrieve its own entry.
+    target = next(e for e in r.entries if e["id"] == "DL-0542")
+    frag = target["deeplink"].rsplit("/", 1)[-1]
+    m = r.resolve(frag)
+    assert m.entry is None or m.entry["deeplink"] == DUMMY
+
+
+def test_corrupt_catalog_metadata_is_not_copied():
+    """DL-0294/0295 carry message 'Offurl'/'Onurl'; usable URI, unusable metadata."""
+    r = DeeplinkResolver("data/deeplinks.json")
+    for i, e in enumerate(r.entries):
+        if e["id"] in {"DL-0294", "DL-0295"}:
+            assert e["message"] not in r.searchable[i]
