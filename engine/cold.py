@@ -14,7 +14,8 @@ import httpx
 
 from engine.assemble import (categorize, fit_description, fit_title, make_goal,
                              merge_duplicate_screens, order_actions, title_case)
-from engine.deeplink import DUMMY, DeeplinkResolver, build_actionable, build_validation
+from engine.deeplink import (DUMMY, DeeplinkResolver, build_actionable,
+                             build_validation, dummy_text)
 from engine.segment import segment
 from engine.variations import generate as gen_variations
 from validators.scrub import scrub_deep
@@ -154,9 +155,9 @@ class ColdPath:
                 if m is not None and m.entry is not None:
                     label = screen or a.get("name", "the relevant settings")
                     if m.entry["deeplink"] == DUMMY:
-                        adl = build_actionable(m.entry,
-                                               fallback_desc=f"Open the {label} on the device",
-                                               fallback_msg=title_case(label)[:60])
+                        d_desc, d_msg = dummy_text(label)
+                        adl = build_actionable(m.entry, fallback_desc=d_desc,
+                                               fallback_msg=d_msg)
                     else:
                         adl = build_actionable(m.entry)
                         vdl = build_validation(m.entry)

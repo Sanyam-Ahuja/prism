@@ -261,6 +261,37 @@ class DeeplinkResolver:
         return W_COS * cosine + W_COV * coverage + W_POL * pol
 
 
+def dummy_text(screen: str) -> tuple[str, str]:
+    """Compose the description and message for a dummy_positive placeholder.
+
+    The catalog requires us to write these ourselves (DL-DUMMY.qna_description).
+    We mirror the catalog's own phrasing so a placeholder reads like a real entry:
+    "Opens the X settings page ...", "Enables X via ...", "Disables X via ...".
+    Naive prefixing produced "Open the open the phone aspect ratio settings page"
+    and "Opens the disable Super steady video stabilization".
+    """
+    text = (screen or "").strip()
+    text = re.sub(r"\s+on the device$", "", text, flags=re.I).strip()
+
+    verb_forms = [
+        (r"^(?:enable|turn on|switch on|activate)\s+(?:the\s+)?", "Enables {} via device Settings on the device."),
+        (r"^(?:disable|turn off|switch off|deactivate)\s+(?:the\s+)?", "Disables {} via device Settings on the device."),
+        (r"^(?:adjust|set|change|update)\s+(?:the\s+)?", "Updates the {} via device Settings on the device."),
+        (r"^(?:open|view|go to|navigate to)\s+(?:the\s+)?", "Opens the {} in device Settings on the device."),
+    ]
+    body, template = text, "Opens the {} in device Settings on the device."
+    for pat, tmpl in verb_forms:
+        m = re.match(pat, text, re.I)
+        if m:
+            body, template = text[m.end():].strip(), tmpl
+            break
+    if not body:
+        body = "relevant settings screen"
+    words = body.split()
+    msg = " ".join(words[:7])
+    return template.format(body), (msg[:1].upper() + msg[1:])
+
+
 def build_actionable(entry: dict, fallback_desc: str = "", fallback_msg: str = "") -> dict:
     """Verbatim field copy (DATA_CONTRACT 4.1). classes is always omitted."""
     if entry["deeplink"] == DUMMY:

@@ -14,8 +14,8 @@
       "stepGroups": [
        {
         "actionableDeeplink": {
-         "deeplink": "bixby://masked/act/12886ae633",
-         "description": "Opens the Intelligent Wi-Fi settings page in device Settings on the device.",
+         "deeplink": "bixby://masked/act/cb03ac7425",
+         "description": "Opens the Wi-Fi settings page in device Settings on the device.",
          "message": "View WiFi Settings",
          "originalType": "onClickURL"
         },
@@ -26,8 +26,8 @@
          "Go to Settings, tap Connections, and then tap Wi-Fi."
         ],
         "validationDeeplink": {
-         "deeplink": "bixby://masked/val/bb94e0ebc2",
-         "key": "Intelligent Wi-Fi"
+         "deeplink": "bixby://masked/val/9f9c37507d",
+         "key": "Wi-Fi"
         }
        }
       ]
@@ -54,8 +54,8 @@
        {
         "actionableDeeplink": {
          "deeplink": "bixby://dummy_positive",
-         "description": "Open the open the application storage settings page on the device",
-         "message": "Open the Application Storage Settings Page"
+         "description": "Opens the application storage settings page in device Settings on the device.",
+         "message": "Application storage settings page"
         },
         "steps": [
          "Navigate to Settings.",
@@ -69,8 +69,8 @@
        {
         "actionableDeeplink": {
          "deeplink": "bixby://dummy_positive",
-         "description": "Open the open the application storage settings page on the device",
-         "message": "Open the Application Storage Settings Page"
+         "description": "Opens the application storage settings page in device Settings on the device.",
+         "message": "Application storage settings page"
         },
         "steps": [
          "Navigate to Settings.",
@@ -288,8 +288,8 @@
        {
         "actionableDeeplink": {
          "deeplink": "bixby://dummy_positive",
-         "description": "Open the open the Smart Switch transfer settings page on the device",
-         "message": "Open the Smart Switch Transfer Settings Page"
+         "description": "Opens the Smart Switch transfer settings page in device Settings on the device.",
+         "message": "Smart Switch transfer settings page"
         },
         "steps": [
          "Swipe up on the Home screen to access the Apps screen.",
@@ -447,19 +447,15 @@
       "stepGroups": [
        {
         "actionableDeeplink": {
-         "deeplink": "bixby://masked/act/e86867ad27",
-         "description": "Updates the screen zoom to a specified value via device Settings on the device.",
-         "message": "Adjust Screen zoom",
-         "originalType": "updateURL"
+         "deeplink": "bixby://dummy_positive",
+         "description": "Opens the phone aspect ratio settings page in device Settings on the device.",
+         "message": "Phone aspect ratio settings page"
         },
         "steps": [
          "If the device's image looks small on your screen, you can make it a little bigger by changing the aspect ratio.",
          "Tap Settings, and then tap Phone aspect ratio."
         ],
-        "validationDeeplink": {
-         "deeplink": "bixby://masked/val/a9eecce9a9",
-         "key": "Screen zoom"
-        }
+        "validationDeeplink": null
        }
       ]
      },
@@ -592,8 +588,8 @@
        {
         "actionableDeeplink": {
          "deeplink": "bixby://dummy_positive",
-         "description": "Open the disable Super steady video stabilization on the device",
-         "message": "Disable Super Steady Video Stabilization"
+         "description": "Disables Super steady video stabilization via device Settings on the device.",
+         "message": "Super steady video stabilization"
         },
         "steps": [
          "Disable Super steady mode."
@@ -687,8 +683,8 @@
        {
         "actionableDeeplink": {
          "deeplink": "bixby://dummy_positive",
-         "description": "Open the open the screen orientation settings page on the device",
-         "message": "Open the Screen Orientation Settings Page"
+         "description": "Opens the screen orientation settings page in device Settings on the device.",
+         "message": "Screen orientation settings page"
         },
         "steps": [
          "Locate the screen orientation icon.",

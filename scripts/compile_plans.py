@@ -17,7 +17,8 @@ import numpy as np
 
 from engine.assemble import (categorize, fit_description, fit_title, make_goal,
                              merge_duplicate_screens, order_actions, title_case)
-from engine.deeplink import DUMMY, DeeplinkResolver, build_actionable, build_validation
+from engine.deeplink import (DUMMY, DeeplinkResolver, build_actionable,
+                             build_validation, dummy_text)
 from engine.embed import get_encoder, QUERY_PREFIX
 from engine.segment import segment
 from validators.gates import Ctx, blocking, load_ctx, validate_envelope
@@ -74,11 +75,9 @@ def build_action(sk_action: dict, seg, resolver: DeeplinkResolver) -> dict | Non
             m = resolver.resolve(g["screen"], tau=TAU_LINK)
             if m.entry is not None:
                 if m.entry["deeplink"] == DUMMY:
-                    adl = build_actionable(
-                        m.entry,
-                        fallback_desc=f"Open the {g['screen'].strip()} on the device",
-                        fallback_msg=title_case(g["screen"].strip())[:60],
-                    )
+                    d_desc, d_msg = dummy_text(g["screen"])
+                    adl = build_actionable(m.entry, fallback_desc=d_desc,
+                                           fallback_msg=d_msg)
                 else:
                     adl = build_actionable(m.entry)
                     vdl = build_validation(m.entry)

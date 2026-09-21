@@ -9,8 +9,9 @@ import sys
 
 DEST = os.environ.get("PRISM_VENDOR_DIR", "vendor/bge-small-en-v1.5")
 REPO = os.environ.get("PRISM_EMBED_REPO", "BAAI/bge-small-en-v1.5")
-# Pin the revision: an unpinned snapshot makes the build unreproducible.
-REV = os.environ.get("PRISM_EMBED_REV", "main")
+# Pinned: tracking "main" would let the encoder change under us, which would
+# silently move every cached embedding and invalidate the calibrated thresholds.
+REV = os.environ.get("PRISM_EMBED_REV", "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a")
 
 
 def main() -> int:

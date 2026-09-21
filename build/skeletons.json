@@ -28,7 +28,7 @@
           "benefit": "restore internet connectivity for email",
           "stepGroups": [
             {
-              "screen": "open the Wi-Fi connection settings page",
+              "screen": "open the Wi-Fi settings page",
               "steps": [
                 2,
                 3,
@@ -416,7 +416,7 @@
           "benefit": "fill the television screen properly",
           "stepGroups": [
             {
-              "screen": "adjust the screen zoom value",
+              "screen": "open the phone aspect ratio settings page",
               "steps": [
                 30,
                 31

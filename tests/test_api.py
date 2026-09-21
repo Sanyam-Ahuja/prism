@@ -129,3 +129,53 @@ def test_oversized_query_is_rejected(client):
 
 def test_empty_query_is_rejected(client):
     assert client.post("/v1/troubleshoot", json={"query": ""}).status_code == 422
+
+
+# -------------------------------------------------------------- concurrency
+def test_hot_path_is_correct_under_concurrency(client):
+    """The encoder is shared mutable state reached via asyncio.to_thread.
+
+    P95 was measured single-threaded, so this checks that parallel requests
+    return the same answers rather than merely not crashing: a data race in the
+    encoder would show up as wrong plans, not exceptions.
+    """
+    import concurrent.futures as cf
+
+    queries = [
+        "my phone display is totally black and wont switch on",
+        "my galaxy s22 touchscreen is laggy and delayed",
+        "my galaxy phone screen is completely cracked",
+    ]
+    # Ground truth, measured serially first.
+    expected = {}
+    for q in queries:
+        d = client.post("/v1/troubleshoot", json={"query": q}).json()
+        expected[q] = d["response"]["contexts"][0]["title"]
+
+    def call(q):
+        r = client.post("/v1/troubleshoot", json={"query": q})
+        assert r.status_code == 200
+        d = r.json()
+        return q, d["response"]["contexts"][0]["title"], d["meta"]["cache_hit"]
+
+    with cf.ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(call, queries * 8))
+
+    assert len(results) == 24
+    for q, title, hit in results:
+        assert hit is True, f"{q!r} missed the cache under load"
+        assert title == expected[q], f"{q!r} returned {title!r}, expected {expected[q]!r}"
+
+
+def test_concurrent_requests_get_distinct_request_ids(client):
+    """Each response must be traceable; a shared id would break log correlation."""
+    import concurrent.futures as cf
+
+    def call(_):
+        return client.post("/v1/troubleshoot",
+                           json={"query": "screen blank"}).headers.get("X-Request-ID")
+
+    with cf.ThreadPoolExecutor(max_workers=8) as ex:
+        ids = list(ex.map(call, range(16)))
+    assert all(ids), "missing X-Request-ID"
+    assert len(set(ids)) == len(ids), "request ids collided"

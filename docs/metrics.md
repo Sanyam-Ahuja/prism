@@ -47,7 +47,7 @@ Reproduce with `python scripts/score_plans.py`.
 | Evaluation Metric | Scale / Anchor | Score |
 |---|---|---|
 | Step accuracy (completeness, correctness, ordering) | 0.0 – 3.0 | **2.92** |
-| Deeplink relevance (exact target screen vs. parent menu) | 0.0 – 2.0 | **1.40** |
+| Deeplink relevance (exact target screen vs. parent menu) | 0.0 – 2.0 | **1.67** |
 
 Step accuracy is high because ADR-001 makes steps structurally correct: they are
 indices into the source, so traceability and gate compliance are 1.00 on every
@@ -55,10 +55,17 @@ plan. The 0.08 shortfall is completeness on the two largest documents (Multi
 window 0.69, Screen mirroring 0.56), where the plan deliberately uses a subset of
 a long source.
 
-Deeplink relevance is the real weakness and the number we would most want to
-improve. Of 13 `auto` actions: 5 score 2.0 (exact screen), 4 score 1.0 (right
-feature area, wrong screen — the parent-menu case PDF §6.2 penalises), 1 scores
-0.0, and 3 are sanctioned `dummy_positive` excluded from the mean (23%).
+Deeplink relevance is the weaker of the two. Of 13 `auto` actions: 6 score 2.0
+(exact screen), 3 score 1.0 (right feature area, wrong screen — the parent-menu
+case PDF §6.2 penalises), and 4 are sanctioned `dummy_positive` excluded from the
+mean (**31%**, a high rate driven by real catalog gaps, not by guessing).
+
+Two defects found by scoring and since fixed: the Wi-Fi action resolved to
+*Intelligent Wi-Fi* rather than the *Wi-Fi settings page* because its descriptor
+said "Wi-Fi connection settings"; and the aspect-ratio action returned a real but
+wrong entry (*Screen zoom*) where the correct answer was a placeholder, because
+its descriptor named the wrong screen. Both were descriptor-quality problems in
+`build/skeletons.json`, not retriever problems.
 
 ### 2.1 Deeplink resolution (Stage 3)
 
@@ -128,7 +135,7 @@ Build-tier compilation runs once, offline, and is not charged per query.
 
 | Variant | Deeplink precision@1 (lexical / paraphrase) | Latency P95 | Cost/query | Key observations |
 |---|---|---|---|---|
-| Baseline: full LLM deeplink mapping | not run | — | — | Rejected by design: the model would emit URIs, which cannot satisfy catalog integrity (PDF 4.2.2). Kept out of the shipped system rather than measured. |
+| Baseline: full LLM deeplink mapping | **18.6% catalog integrity · 2.3% precision@1** | 1365 ms/descriptor | local, $0 | **Measured, not argued.** The model emits `bixby://` URIs directly; 35 of 43 were not catalog members at all. Masked URIs are opaque hashes, so this design cannot satisfy PDF §4.2.2 — which is the empirical case for ADR-002. |
 | **Variant A: hybrid BM25 + dense (shipped)** | **100% / 6.7%** | 13.7 ms hot | $0.00 | Best paraphrase ranking (recall@1 53%, recall@5 87%). Dense is what makes non-lexical descriptors reachable at all. |
 | Variant B: pure rules / BM25 only | 100% / 0% | 13.7 ms hot | $0.00 | Ties Variant A on catalog-register descriptors and is simpler, but collapses on paraphrase (recall@1 13%). |
 
@@ -192,10 +199,13 @@ coverage from 0% to 65%.
 8. **One residual false cache hit**: "extremely slow and laggy when switching
    between apps" routes to *Touchscreen issues*. Semantically adjacent; arguably
    defensible, counted as a failure here.
-9. **`gemma3:4b` could not be downloaded** (`registry.ollama.ai` returned EOF).
-   Benchmarks use `qwen2.5vl:7b`, which fits the same VRAM budget. The extractor
-   is swappable via `PRISM_EXTRACT_MODEL`; a 4B model should roughly halve cold
-   latency.
+9. **Cold-path latency is not currently re-measurable.** `gemma3:4b` was
+   eventually obtained (the earlier download failures were transient), but the
+   machine's GPU is shared with an unrelated training job, and measurements taken
+   under contention showed throughput dropping from 43.5 to ~29 tok/s. The
+   recorded cold P95 of 7333 ms was measured on an idle GPU with
+   `qwen2.5vl:7b`; a clean `gemma3:4b` comparison is pending an idle card. No
+   contaminated figure is reported here.
 10. **Spec conflict, unresolved.** `sample_output.json` violates the PDF's own
    5-7-word `description` rule (9 and 12 words). We enforce the PDF (ADR-007);
    `tests/test_pipeline.py::test_shipped_sample_violates_description_rule` is the

@@ -1,4 +1,5 @@
 """Regression suite. Pins the contract, the data facts, and the known conflicts."""
+import glob
 import json
 import subprocess
 import sys
@@ -322,3 +323,23 @@ def test_corrupt_catalog_metadata_is_not_copied():
     for i, e in enumerate(r.entries):
         if e["id"] in {"DL-0294", "DL-0295"}:
             assert e["message"] not in r.searchable[i]
+
+
+def test_encoder_revision_is_pinned():
+    """An unpinned encoder would silently move every cached vector.
+
+    The thresholds (TAU_HIT, TAU_LINK, COS_FLOOR/CEIL) are calibrated against
+    this specific model's geometry, so tracking 'main' would invalidate them
+    without any test failing.
+    """
+    import re
+
+    from engine.embed import MODEL_REV
+
+    assert re.fullmatch(r"[0-9a-f]{40}", MODEL_REV), f"not a pinned sha: {MODEL_REV}"
+
+    meta = glob.glob("vendor/bge-small-en-v1.5/.cache/huggingface/download/*.metadata")
+    if not meta:
+        pytest.skip("vendor/ not present (regenerate with scripts/vendor_models.py)")
+    shas = {open(m).readline().strip() for m in meta}
+    assert MODEL_REV in shas, f"pin {MODEL_REV} not among vendored revisions {shas}"

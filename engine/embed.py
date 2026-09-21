@@ -10,6 +10,10 @@ import functools
 import os
 
 MODEL_ID = os.environ.get("PRISM_EMBED_MODEL", "BAAI/bge-small-en-v1.5")
+# The exact revision vendored into vendor/ and baked into the image. Pinned
+# because a changed encoder moves every cached vector and invalidates the
+# thresholds calibrated against them.
+MODEL_REV = os.environ.get("PRISM_EMBED_REV", "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a")
 
 
 @functools.lru_cache(maxsize=1)
@@ -19,7 +23,9 @@ def get_encoder():
     from sentence_transformers import SentenceTransformer
 
     torch.manual_seed(0)
-    m = SentenceTransformer(MODEL_ID, device="cpu")
+    # A local vendored path takes no revision; only a hub id does.
+    kw = {} if os.path.isdir(MODEL_ID) else {"revision": MODEL_REV}
+    m = SentenceTransformer(MODEL_ID, device="cpu", **kw)
     m.eval()
     return m
 
