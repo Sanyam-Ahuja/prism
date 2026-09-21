@@ -1,5 +1,17 @@
+# environment
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+
+# vendored model weights (regenerate with scripts/vendor_models.py)
+vendor/
+
+# run outputs
 results.jsonl
+*.log
+
+# never commit credentials
+.env
+*.env
+!*.env.example

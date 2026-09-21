@@ -9,7 +9,7 @@ help:
 
 venv:  ## create the pinned 3.12 venv and install dependencies
 	uv venv --python 3.12 .venv
-	uv pip install --python $(PY) --torch-backend=cpu -r requirements.txt
+	uv pip install --python $(PY) --torch-backend=cpu -r requirements.lock
 
 build: ## compile skeletons -> artifacts/ (fails on any blocking gate)
 	$(TB) $(PY) scripts/compile_plans.py
