@@ -129,25 +129,43 @@ number — not an assertion.
 
 ## Open gaps against the PS
 
+Re-audited 2026-09-22 against the clean (non-OCR) problem statement.
+
 | # | Gap | PS reference | Severity |
 |---|---|---|---|
-| 1 | **Only Display domain has plans.** Battery, Camera, Performance fall to the cold path or `no_siis_context` | §3 names four domains | **High** — largest scoring risk |
-| 2 | **Ablation Baseline row not measured** — full-LLM URI mapping argued-away, not run | Appendix C §5 | Medium |
-| 3 | **Cold-start not benchmarked; container never built** (`vendor/` missing) | §8 Phase 4, §2 comp. 4 | Medium |
-| 4 | Free-form descriptor resolution 30% | §6.2 screen resolution | Low — Stage 3 receives normalized descriptors |
-| 5 | `queries.json` and 4 of 5 `samples/` never supplied | §3 | ➖ Not ours — M-Q4 |
-| 6 | `sample_output.json` contradicts §4.1 (9 and 12-word descriptions) | §4.1 vs `samples/` | ➖ Spec conflict — M-Q2 |
+| 1 | **Plan coverage is Display-only.** The pipeline is domain-independent — Stage 3 scores 96.2% on a 26-label Battery/Camera/Performance set and a probe corpus drives all three through to gate-passing plans — but no *plans* exist for domains whose SIIS text we were never given | §3, Appendix C §2 | **High**, and partly not ours (M-Q4) |
+| 2 | **Deeplink relevance 1.67 / 2.0.** 3 of 13 auto actions land on the right feature area but not the exact screen | §6.2, Appendix C §2 | Medium |
+| 3 | **Cold-path latency unverified on current code.** The recorded 7333 ms P95 predates several changes and the GPU is shared with an unrelated training job; measurements under contention are discarded rather than reported | §6.3 | Medium — pending an idle GPU |
+| 4 | **31% of auto actions use `dummy_positive`.** Driven by genuine catalog gaps (no safe mode, auto-rotate, Smart View, aspect ratio, clear-app-cache, Smart Switch), not by guessing | §3, Appendix C §1 | Medium — data-bound |
+| 5 | Free-form descriptor resolution 30% at the shipped threshold | §6.2 | Low — Stage 3 receives normalized descriptors |
+| 6 | `queries.json` and 4 of 5 `samples/` never supplied | §3 | ➖ Not ours — M-Q4 |
+| 7 | `sample_output.json` contradicts §4.1 (9 and 12-word descriptions) | §4.1 | ➖ Spec conflict — M-Q2 |
+| 8 | `meta` carries `tokens` beyond Appendix B's four keys | §6.3 vs Appendix B | ➖ Deliberate, switchable — ADR-016, M-Q3 |
+
+**Closed since the first audit:** the ablation Baseline is now measured (18.6%
+catalog integrity, 2.3% precision@1); the container builds, runs offline and its
+cold start is measured at 17.3 s; both Appendix C §2 judged scores are filled with
+an auditable rubric.
 
 ---
 
-## Changes made during this audit
+## Defects found by auditing, and fixed
 
-1. `meta.tokens` added — §6.3 requires token utilization tracking; `cold.py` computed
-   it and the API was dropping it.
-2. Four determinism tests added — §6.1 requires deterministic execution and nothing
-   tested it. One of them proves `compile_plans.py` is byte-for-byte reproducible,
-   which ADR-003 had asserted without evidence.
-3. Two catalog-integrity tests added — §7.4 (never match on the masked URI) and the
-   DL-0294/0295 corrupt-metadata exclusion.
+| # | Defect | How it was caught |
+|---|---|---|
+| 1 | Unhandled exceptions returned a 500 with a non-JSON body, breaking §4.2.4 | fault injection |
+| 2 | No request size cap or deadline; a 2 MB payload was accepted and the cold path could run to 30 s | boundary test |
+| 3 | `requirements.lock` pinned CUDA torch (`nvidia-cublas` 423 MB); the dev venv held two torch builds | container build |
+| 4 | Expanding the verb list silently repointed six step groups to the wrong steps | plan inspection during rubric scoring |
+| 5 | The reproducibility test recompiled `artifacts/` **in place**, which is what hid defect 4 | tracing why the diff showed no change |
+| 6 | Selection took RRF rank-1 while thresholding on confidence; a better candidate sat at rank 5 | rubric scoring of the Wi-Fi action |
+| 7 | Placeholder text read "Open the open the …" and "Opens the disable …" | inspecting emitted output |
+| 8 | Two skeleton descriptors named the wrong screen | rubric scoring |
+| 9 | §6.1 required determinism and nothing tested it | first alignment audit |
+| 10 | §6.3 required token tracking; the API dropped what `cold.py` computed | first alignment audit |
 
-Test count: 31 → **37**.
+Most of these were found by *looking at output*, not by tests passing. The two
+worst — 4 and 5 — were introduced by me and hidden by a test with a side effect on
+the thing it verified.
+
+Test count: 31 → **63**.

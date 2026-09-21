@@ -279,6 +279,31 @@ deterministic) and, if more is wanted, a local deterministic reranker at the sam
 
 ---
 
+## ADR-016 — Emit `meta.tokens`, behind a switch
+
+**Status:** accepted, pending M-Q3 · **Drives:** C-cost (PDF §6.3)
+
+**Context.** §6.3 requires "tracking token utilization and inference cost per
+query", and Appendix C §4 derives cost as `(prompt tokens + completion tokens) x
+rate`. Appendix B's reference envelope, however, shows `meta` with exactly four
+keys and no token field. `cold.py` computes the counts; the API was dropping them.
+
+**Decision.** Emit `meta.tokens.{prompt,completion}`, controlled by
+`PRISM_META_TOKENS` (default on).
+
+**Consequences.**
+- §6.3 is satisfied directly in the response rather than only in a report.
+- `meta` is demonstrably not a closed set: `fallback` is mandated by §4.2.3 and is
+  likewise absent from the Appendix B example, so a strict four-key reading is
+  already untenable.
+- Additive keys cannot break a consumer that reads the four documented ones.
+- **Risk:** if a grader validates `meta` strictly, the extra key could fail a
+  check. Mitigated by the switch — `PRISM_META_TOKENS=0` restores the Appendix B
+  shape with no code change, which is why this is a setting and not a constant.
+
+
+---
+
 # Open questions for the mentor
 
 Ordered by how much a late answer would cost us.

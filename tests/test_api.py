@@ -179,3 +179,18 @@ def test_concurrent_requests_get_distinct_request_ids(client):
         ids = list(ex.map(call, range(16)))
     assert all(ids), "missing X-Request-ID"
     assert len(set(ids)) == len(ids), "request ids collided"
+
+
+def test_meta_always_carries_the_appendix_b_keys(client):
+    """Appendix B's four keys plus the 4.2.3-mandated fallback are non-negotiable."""
+    d = client.post("/v1/troubleshoot", json={"query": "screen blank"}).json()
+    assert set(d["meta"]) >= {"latency_ms", "cache_hit", "model", "cost_usd", "fallback"}
+
+
+def test_meta_tokens_can_be_switched_off(client, monkeypatch):
+    """ADR-016: PRISM_META_TOKENS=0 restores the Appendix B meta shape."""
+    import api.main as m
+    monkeypatch.setattr(m, "EMIT_TOKENS", False)
+    d = client.post("/v1/troubleshoot", json={"query": "screen blank"}).json()
+    assert "tokens" not in d["meta"]
+    assert set(d["meta"]) == {"latency_ms", "cache_hit", "model", "cost_usd", "fallback"}

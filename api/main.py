@@ -34,6 +34,12 @@ DEADLINE_S = float(os.environ.get("PRISM_DEADLINE_S", "9.0"))
 # Cap on reference text: beyond this the segmenter and extractor context blow up.
 MAX_SIIS_CHARS = int(os.environ.get("PRISM_MAX_SIIS_CHARS", "262144"))
 
+# PDF 6.3 requires token utilisation to be tracked per query, but Appendix B's
+# reference envelope shows only four meta keys. We emit it (meta is demonstrably
+# not a closed set - "fallback" is mandated by 4.2.3 and also absent from that
+# example) and keep it switchable, so M-Q3 can be answered without a code change.
+EMIT_TOKENS = os.environ.get("PRISM_META_TOKENS", "1") not in ("0", "false", "False")
+
 # PDF 4.2.3 / 8 Phase 4 name exactly these two fallback values. We stay inside
 # that set: an internal fault degrades to no_match (and is logged), rather than
 # inventing a third value the grader may not expect.
@@ -89,19 +95,20 @@ class TroubleshootRequest(BaseModel):
 
 def _envelope(query, variations, contexts, t0, cache_hit, model, cost, fallback,
               tokens=None):
+    meta = {
+        "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+        "cache_hit": cache_hit,
+        "model": model,
+        "cost_usd": cost,
+        "fallback": fallback,
+    }
+    if EMIT_TOKENS:
+        meta["tokens"] = tokens or {"prompt": 0, "completion": 0}
     return {
         "query": query,
         "query_variations": variations,
         "response": {"contexts": contexts},
-        "meta": {
-            "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
-            "cache_hit": cache_hit,
-            "model": model,
-            "cost_usd": cost,
-            # PDF 6.3 requires token utilisation to be tracked, not just cost.
-            "tokens": tokens or {"prompt": 0, "completion": 0},
-            "fallback": fallback,
-        },
+        "meta": meta,
     }
 
 
