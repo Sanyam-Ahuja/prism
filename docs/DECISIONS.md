@@ -334,26 +334,30 @@ the same overhead and would have hidden the differences between them:
 on every document, with the best step accuracy and the most latency headroom.
 
 **Re-measured on the final code** (after ADR-018 to ADR-022, all seven candidates
-in one run; full table in `reports/README.md` §E): the decision holds.
-`qwen2.5:1.5b` has the fastest median (3326 ms; P95 5473 ms), 33/33 plans valid and
-the best step accuracy (2.97). `qwen2.5:3b` passes 33/33 but is slower (P95 6514
-ms) with lower step accuracy (2.75). `llama3.2:3b` (P95 8168 ms) and `gemma3:4b`
-(P95 10108 ms) miss the budget; `gemma3:1b` returns no plan for 3 of 11 documents.
+in one run on a quiet machine; full table in `reports/README.md` §E): the decision
+holds, on quality more than speed. `qwen2.5:1.5b` has 33/33 plans valid, the best
+step accuracy (2.97) and the fastest median, narrowly (2516 ms; P95 4315 ms).
+`qwen2.5:3b` passes 33/33 but is slower (median 3797, P95 5381 ms) with lower step
+accuracy (2.78). `llama3.2:3b` meets the budget on the quiet machine (P95 6925 ms);
+`gemma3:4b` misses it (P95 8237 ms); `gemma3:1b` returns no plan for 3 of 11
+documents. An earlier run the same day, with other work on the laptop, measured
+every model 20–30% slower and `llama3.2:3b` over budget.
 
 **Is a 1B model enough? No.** `llama3.2:1b` was measured at Ollama's default 8-bit
 quantization and at 4-bit, like-for-like with the 4-bit `qwen2.5:1.5b`. The 8-bit
-build is slower (P95 6284 ms). The 4-bit build has the lowest P95 of all (4770 ms)
-but a slower median (3634 ms) because it writes 37% more tokens, lower step
-accuracy (2.87), treats only 15 of its 72 actions as settings changes, and the
-guard had to replace 63 of its 72 action names.
+build is slower (median 2783, P95 4690 ms). The 4-bit build is as fast: its median
+is 54 ms slower (2570 ms, inside run-to-run noise) and its P95 is the lowest of
+all (3386 ms). It loses on quality: lower step accuracy (2.87), only 15 of its 72
+actions treated as settings changes, 63 of its 72 action names replaced by the
+guard, and 37% more tokens written.
 
 **Consequences.**
 - The cold path has real headroom under the 8 s budget on a laptop GPU; the
-  official figure is `docs/metrics.md` §3 (P95 5215 ms).
+  official figure is `docs/metrics.md` §3 (P95 4389 ms).
 - **Cost:** weak deeplink coverage. Before ADR-018 the 23% here was inflated by
   copied example screens (only 20% agreed with the compiled plan); after it, 9%
   with half agreeing; after ADR-022, 19% with three quarters agreeing. The 3B
-  models link more (`llama3.2:3b` 37%) at 1.4–1.5 s more per median request.
+  models link more (`llama3.2:3b` 37%) at about 1.3 s more per median request.
 - Gemma is "particularly encouraged" by the organizers (participant kit,
   `SUBMISSION.md`). On this hardware neither size works: `gemma3:1b` drops
   documents and `gemma3:4b` misses the budget. `gemma3:4b` names its actions best
@@ -448,9 +452,9 @@ model path on the library's own articles.
 **Consequences.**
 - Repeats are identical by construction. The model's own nondeterminism remains
   for the first request per article after a restart.
-- A request carrying a library article is answered in 0.4 ms (P95, in-process,
+- A request carrying a library article is answered in 0.3 ms (P95, in-process,
   `reports/bench.txt`) instead of taking the semantic path.
-- An unseen article now always takes the cold path (~5 s) even when the query
+- An unseen article now always takes the cold path (P95 4.4 s) even when the query
   would have hit the cache. That is the point: the answer must come from the
   text the caller sent.
 - This is not the PDF's "write to cache": the store is keyed by the exact article,
@@ -534,7 +538,8 @@ Switch QR plan instead of *Some things to check first*), not from the pairing.
 
 **Consequences.**
 - Hot-path cost: one batched encode of the complaint and its clauses. Paraphrase
-  P95 is unchanged at 28.6 ms in-process.
+  P95 was unchanged at 28.6 ms in-process when measured on the same busy machine
+  (13.7 ms in the later quiet-machine run).
 - A second problem with no plan is still dropped without notice. Saying so would
   need a new `meta` key beyond Appendix B's (M-Q3).
 - The cold path still returns one plan: it derives from one article.
@@ -604,9 +609,11 @@ changed catalog or encoder is never trusted stale
 (`test_build_time_catalog_vectors_are_used_only_when_current`).
 
 **Consequences.** Loading the vectors takes 0.5 s instead of 7.1 s, and process
-launch to `/health` = ok fell from 29.2 s to **21.7 s** over HTTP
-(`reports/stress_api.txt`, `reports/verify_startup_and_steps.txt`). What remains
-is loading the encoder itself (18.8 s in the breakdown, torch import included).
+launch to `/health` = ok fell from 29.2 s to 21.7 s over HTTP. What remains is
+loading the encoder itself (18.8 s in that breakdown, torch import included).
+Re-measured later on a quiet machine: 0.3 s for the vectors, 9.0 s for the
+encoder, **13.6 s** to `/health` = ok (`reports/stress_api.txt`,
+`reports/verify_startup_and_steps.txt`).
 
 ---
 

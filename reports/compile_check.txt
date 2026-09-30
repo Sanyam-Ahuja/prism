@@ -1,5 +1,5 @@
 # python scripts/compile_plans.py
-# exit=0  elapsed=31.3s
+# exit=0  elapsed=14.9s
 
 OK  plans=11  cache_vectors=(130, 384)  auto_actions=13
     deeplink coverage: 69% specific catalog entry, 100% valid URI (incl. 4 sanctioned dummy_positive)

@@ -2,7 +2,7 @@
 
 > **Historical snapshot** of the first build session (Fedora, RTX 4060,
 > `qwen2.5vl:7b`). Its figures are not current: see `docs/metrics.md`, re-measured
-> 2026-09-30 with `qwen2.5:1.5b` (cold P95 5215 ms, N=33).
+> 2026-09-30 with `qwen2.5:1.5b` (cold P95 4389 ms, N=33).
 
 What was built in this session, what it measures, and what is not done.
 Written to match the code as it stands; every number here is reproduced by

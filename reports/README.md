@@ -2,8 +2,11 @@
 
 Raw output behind every figure in [`docs/metrics.md`](../docs/metrics.md) (PDF
 Appendix C), plus the supporting measurements that do not fit that template's
-tables. Measured 2026-09-30 on the machine described in `environment.txt`; each
-`.txt` file starts with the command that produced it.
+tables. Measured 2026-09-30 on the machine described in `environment.txt`, all in
+one sequential run (21:30–22:05) with nothing else running on the laptop; each
+`.txt` file starts with the command that produced it. What was cleared on the
+laptop for this run, and how much it changed the timings:
+[`docs/BENCHMARK_ENVIRONMENT.md`](../docs/BENCHMARK_ENVIRONMENT.md).
 
 ## Reproduce
 
@@ -47,22 +50,23 @@ millisecond.
 
 | Path | n | P50 (ms) | P95 (ms) | Schema-valid |
 |---|---|---|---|---|
-| Cache hit - exact | 40 | 5.5 | 7.9 | 40/40 |
-| Cache hit - unseen paraphrase | 40 | 20.5 | 30.9 | 40/40 |
-| Miss without `siis_response` (fallback) | 12 | 20.0 | 25.2 | 12/12 |
-| Cold query - full pipeline | 33 | 3263 | 5413 | 33/33 |
-| Hot burst, 8 concurrent clients | 200 | 85.9 | 232.3 | 200/200 |
+| Cache hit - exact | 40 | 1.6 | 2.6 | 40/40 |
+| Cache hit - unseen paraphrase | 40 | 20.0 | 24.3 | 40/40 |
+| Miss without `siis_response` (fallback) | 12 | 19.7 | 21.5 | 12/12 |
+| Cold query - full pipeline | 33 | 2717 | 4325 | 33/33 |
+| Hot burst, 8 concurrent clients | 200 | 112.6 | 269.6 | 200/200 |
 
-- **Cold start:** 21.7 s from process launch to `/health` = ok, down from 29.2 s.
-  In the in-process breakdown (`verify_startup_and_steps.txt`): 18.8 s loading the
-  sentence encoder, 0.5 s loading the catalog vectors the build saved (ADR-023; it
+- **Cold start:** 13.6 s from process launch to `/health` = ok (29.2 s before
+  ADR-023; 21.7 s in an earlier run the same day with other work on the laptop).
+  In the in-process breakdown (`verify_startup_and_steps.txt`): 9.0 s loading the
+  sentence encoder, 0.3 s loading the catalog vectors the build saved (ADR-023; it
   was 7.1 s to embed them at startup), 0.0 s loading the plan cache. The first
-  cold request after startup took 4057 ms; the extractor stays resident
+  cold request after startup took 3109 ms; the extractor stays resident
   (`keep_alive: -1`).
 - **Out-of-scope complaints:** all 12 no-article misses got the `no_siis_context`
   fallback (11 of 12 before ADR-020).
-- **Concurrency:** 71 requests/s with 8 clients. Earlier runs of the same test
-  measured 217 ms and 320 ms P95 with no hot-path change in between: the encoder
+- **Concurrency:** 70 requests/s with 8 clients. Earlier runs of the same test
+  measured 217, 232 and 320 ms P95 with no hot-path change in between: the encoder
   runs on the CPU, so this figure moves with whatever else the laptop is running.
 - **Malformed payloads:** 3/3 answered with a JSON 422, never a non-JSON body.
 
@@ -74,16 +78,17 @@ robustness check.
 
 | Set | n | Config | precision@1 (catalog) | intended-dummy | Overall | P95 ms/descriptor |
 |---|---|---|---|---|---|---|
-| Catalog register, Display | 43 | hybrid, tau 0.52 (shipped) | 94.7% (36/38) | 100% (5/5) | **95.3%** | 24.5 |
-| Catalog register, Display | 43 | BM25 only, tau 0.52 | 94.7% (36/38) | 60% (3/5) | 90.7% | 21.3 |
-| Battery / Camera / Performance | 26 | hybrid, tau 0.52 | 100% (17/17) | 100% (9/9) | **100%** | 25.1 |
-| Free-form paraphrases | 20 | hybrid, tau 0.52 | 6.7% (1/15) | 100% (5/5) | 30% | 23.8 |
-| Free-form paraphrases | 20 | hybrid, tau 0.20 | 40% (6/15) | 100% (5/5) | 55% | 25.1 |
-| Free-form paraphrases | 20 | BM25 only, tau 0.52 | 0% (0/15) | 100% (5/5) | 25% | 9.0 |
+| Catalog register, Display | 43 | hybrid, tau 0.52 (shipped) | 94.7% (36/38) | 100% (5/5) | **95.3%** | 16.9 |
+| Catalog register, Display | 43 | BM25 only, tau 0.52 | 94.7% (36/38) | 60% (3/5) | 90.7% | 4.7 |
+| Battery / Camera / Performance | 26 | hybrid, tau 0.52 | 100% (17/17) | 100% (9/9) | **100%** | 17.7 |
+| Free-form paraphrases | 20 | hybrid, tau 0.52 | 6.7% (1/15) | 100% (5/5) | 30% | 17.1 |
+| Free-form paraphrases | 20 | hybrid, tau 0.20 | 40% (6/15) | 100% (5/5) | 55% | 16.6 |
+| Free-form paraphrases | 20 | BM25 only, tau 0.52 | 0% (0/15) | 100% (5/5) | 25% | 4.6 |
 
-Per-descriptor timings move with the laptop's load: in an earlier run the same
-code measured hybrid P95 37.8 ms and BM25 10.7 ms. Means are steadier: 22.5 ms
-hybrid against 10.7 ms BM25 on the Display set in this run.
+Per-descriptor timings move with the laptop's load: earlier the same day, with
+other work running, the same code measured hybrid P95 24.5 ms and BM25 21.3 ms.
+On the quiet machine BM25 takes under a third of the hybrid's time (means 4.4 ms
+against 14.9 ms on the Display set).
 
 Ranking quality on the free-form set, thresholding aside: BM25 alone reaches
 recall@1 13.3% and recall@5 60.0%; BM25 + dense reaches **66.7%** and **93.3%**.
@@ -100,8 +105,8 @@ The Baseline (full LLM mapping, `qwen2.5:1.5b`) on the same 43 Display labels:
 
 | Mode | Catalog integrity | precision@1 | P50 / P95 ms per descriptor | Tokens per descriptor |
 |---|---|---|---|---|
-| generate: the model writes the URI | 2.3% (1/43) | 2.3% | 329 / 428 | 197 + 29 |
-| select: the model picks among the retriever's top 8 | 100% | 60.5% | 206 / 217 | 222 + 15 |
+| generate: the model writes the URI | 2.3% (1/43) | 2.3% | 272 / 279 | 197 + 29 |
+| select: the model picks among the retriever's top 8 | 100% | 60.5% | 213 / 233 | 222 + 15 |
 
 ## C. Semantic cache calibration (`cache_*.txt`)
 
@@ -169,36 +174,41 @@ so the 4-bit build was measured too, for a like-for-like comparison with the
 
 | Model | Params · quant | P50 (ms) | P95 (ms) | Plans passing all gates | Step accuracy | Auto actions · linked · agreeing with compiled plan | Names the guard replaced | Tokens (prompt / completion) |
 |---|---|---|---|---|---|---|---|---|
-| **qwen2.5:1.5b (shipped)** | 1.5B · Q4_K_M | **3326** | 5473 | **33/33** | **2.97** | 63 · 19% · 75% | 36 of 108 actions | 606 / 272 |
-| llama3.2:1b | 1.2B · Q8_0 | 3804 | 6284 | 33/33 | 2.94 | 18 · 50% · 67% | 27 of 84 | 594 / 325 |
-| llama3.2:1b (4-bit) | 1.2B · Q4_K_M | 3634 | **4770** | 33/33 | 2.87 | 15 · 40% · 50% | 63 of 72 | 594 / 373 |
-| gemma3:1b | 1.0B · Q4_K_M | 4276 | 6133 | 24/33 (3 of 11 docs empty) | 2.96 | 27 · 22% · 100% | 51 of 69 | 483 / 254 |
-| llama3.2:3b | 3.2B · Q4_K_M | 4721 | 8168 | 33/33 | 2.91 | 57 · 37% · 71% | 21 of 123 | 594 / 243 |
-| qwen2.5:3b | 3.1B · Q4_K_M | 4868 | 6514 | 33/33 | 2.75 | 36 · 42% · 60% | 79 of 59 | 606 / 262 |
-| gemma3:4b | 4.3B · Q4_K_M | 7089 | 10108 | 30/33 (3 fail G2) | 2.86 | 63 · 19% · 100% | 9 of 156 | 607 / 268 |
+| **qwen2.5:1.5b (shipped)** | 1.5B · Q4_K_M | **2516** | 4315 | **33/33** | **2.97** | 63 · 19% · 75% | 36 of 108 actions | 606 / 272 |
+| llama3.2:1b | 1.2B · Q8_0 | 2783 | 4690 | 33/33 | 2.94 | 18 · 50% · 67% | 27 of 84 | 594 / 325 |
+| llama3.2:1b (4-bit) | 1.2B · Q4_K_M | 2570 | **3386** | 33/33 | 2.87 | 15 · 40% · 50% | 63 of 72 | 594 / 373 |
+| gemma3:1b | 1.0B · Q4_K_M | 3090 | 4188 | 24/33 (3 of 11 docs empty) | 2.96 | 27 · 22% · 100% | 51 of 69 | 483 / 254 |
+| llama3.2:3b | 3.2B · Q4_K_M | 3848 | 6925 | 33/33 | 2.91 | 57 · 37% · 71% | 21 of 123 | 594 / 243 |
+| qwen2.5:3b | 3.1B · Q4_K_M | 3797 | 5381 | 33/33 | 2.78 | 36 · 42% · 60% | 78 of 60 | 606 / 262 |
+| gemma3:4b | 4.3B · Q4_K_M | 5624 | 8237 | 30/33 (3 fail G2) | 2.86 | 63 · 19% · 100% | 9 of 156 | 607 / 268 |
 
-`qwen2.5:1.5b` stays: the fastest median, every plan valid and the best step
-accuracy. The 3B models link more actions (about 21 for `llama3.2:3b` and 15 for
-`qwen2.5:3b`, against 12) but cost 1.4–1.5 s more at the median. A 1B model is not
-enough here. The 4-bit `llama3.2:1b` has the lowest P95 but a
-slower median, because it writes 37% more tokens; it treats only 15 of 72 actions
-as settings changes, and the guard had to replace 63 of its 72 action names.
-`gemma3:1b` still returns no plan for 3 of 11 documents. `llama3.2:3b` now links
-37% of its auto actions, but misses the 8 s budget on this GPU, as does
-`gemma3:4b`, which names its actions best (9 replacements) and is the
-organizer-encouraged family: the natural upgrade on a faster GPU, via
+`qwen2.5:1.5b` stays: every plan valid, the best step accuracy, and the fastest
+median, though only just. On this quiet-machine run the 4-bit `llama3.2:1b` is
+54 ms (2%) slower at the median, inside run-to-run noise, and has the lowest P95
+(3386 ms against 4315 ms). It loses on quality, not speed: it treats only 15 of 72
+actions as settings changes, the guard had to replace 63 of its 72 action names,
+its step accuracy is 2.87, and it writes 37% more tokens. The 3B models link more
+actions (about 21 for `llama3.2:3b` and 15 for `qwen2.5:3b`, against 12) but cost
+about 1.3 s more at the median. `gemma3:1b` still returns no plan for 3 of 11
+documents. On the quiet machine `llama3.2:3b` meets the 8 s budget (P95 6.9 s);
+`gemma3:4b` still misses it (8.2 s). It names its actions best (9 replacements)
+and is the organizer-encouraged family: the natural upgrade on a faster GPU, via
 `PRISM_EXTRACT_MODEL` with no code change.
 
 "Names the guard replaced" can exceed the actions kept (`qwen2.5:3b`) because
 replaced names that coincide are merged into one action.
 
 The `qwen2.5:1.5b` row here and `docs/metrics.md` §3 are separate runs of the same
-code; §3 is the official figure. Across the day's runs its P95 ranged 5215–5475 ms.
+code; §3 is the official figure. In this run they agree (P95 4315 ms here, 4389 ms
+in `bench.txt`). Earlier the same day, with other work running on the laptop, its
+P95 ranged 5215–5475 ms.
 
 An earlier `llama3.2:3b` run measured P95 30 s with two timeouts. The A/B in
-`verify_schema_bounds_ab.txt` showed decode speed is the same with and without the
-schema bounds (41.7 vs 43.9 tok/s), and clean re-runs gave figures like the ones
-above: the slowdown was the machine, not the model.
+`verify_schema_bounds_ab.txt` shows decode speed is the same with and without the
+schema bounds (72.9 vs 73.4 tok/s for `llama3.2:3b`, 123.9 vs 123.7 for
+`qwen2.5:1.5b`), and clean re-runs gave figures like the ones above: the slowdown
+was the machine, not the model. The same A/B earlier in the day, with other work
+running, decoded at about half these speeds (41.7 and 62.0 tok/s).
 
 ## F. Step accuracy by component (`verify_startup_and_steps.txt`)
 
@@ -257,3 +267,12 @@ never reaches the model and cannot differ.
     bug that failed 3 of 33 plans until fixed;
   - the build embeds the catalog: cold start 29.2 s → 21.7 s (§A);
   - a 1B extractor was tried at 8-bit and 4-bit and rejected (§E).
+- **Full re-run on a quiet machine (evening of 2026-09-30).** Every report was
+  regenerated in one sequential run with no other work on the laptop and no code
+  change. Every accuracy figure reproduced exactly: tests, step accuracy, deeplink
+  relevance and precision, cache hit rates, out-of-scope false hits, multi-intent
+  and determinism. Only timings moved: cold P95 5215 → 4389 ms, paraphrase-hit P95
+  28.6 → 13.7 ms, cold start 21.7 → 13.6 s, decode speed about 2x. In the model
+  comparison the 4-bit `llama3.2:1b` now ties `qwen2.5:1.5b` at the median and
+  beats it at P95, and `llama3.2:3b` now meets the 8 s budget; the choice of
+  `qwen2.5:1.5b` stands on quality (§E).

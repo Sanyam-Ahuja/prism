@@ -1,12 +1,12 @@
 # python scripts/bench.py --n 40 --cold 33
 # PRISM_EXTRACT_MODEL=qwen2.5:1.5b
-# exit=0  elapsed=130.3s
+# exit=0  elapsed=96.3s
 
 path                                            n      P50      P95    target  verdict
 --------------------------------------------------------------------------------------
-Cache hit - exact query match                  40     0.1ms     0.3ms      300ms  PASS
-Cache hit - unseen semantic paraphrase         40    15.8ms    28.6ms      300ms  PASS
-Known article - its compiled plan              40     0.1ms     0.4ms      300ms  PASS
-Cold query - full pipeline                     33  3198.7ms  5214.7ms     8000ms  PASS
+Cache hit - exact query match                  40     0.0ms     0.1ms      300ms  PASS
+Cache hit - unseen semantic paraphrase         40    11.8ms    13.7ms      300ms  PASS
+Known article - its compiled plan              40     0.1ms     0.3ms      300ms  PASS
+Cold query - full pipeline                     33  2575.7ms  4388.7ms     8000ms  PASS
 
 cold-path auto actions with a catalog deeplink: 12/63 = 19%

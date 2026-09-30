@@ -18,7 +18,7 @@ number — not an assertion.
 | 1 | Enforce length, phrasing, zero-leak constraints | ✅ | `validators/gates.py` (G1–G6), `validators/scrub.py` (G0) — programmatic, not prompt-only |
 | 2 | Deeplink Mapping: match screens to catalog via semantic + keyword | ✅ | `engine/deeplink.py` — BM25 + bge-small dense, RRF fusion |
 | 2 | Sequencing: non-invasive first → critical last | ✅ | `engine/assemble.py::order_actions`; gate G14; `test_ordering_places_critical_last` |
-| 3 | Fast-Path cache: hit ≤300 ms without LLM | ✅ | `engine/cache.py`; **P95 28.6 ms** paraphrase / 0.3 ms exact in-process (30.9 / 7.9 ms over HTTP); no model invoked on the hot path |
+| 3 | Fast-Path cache: hit ≤300 ms without LLM | ✅ | `engine/cache.py`; **P95 13.7 ms** paraphrase / 0.1 ms exact in-process (24.3 / 2.6 ms over HTTP); no model invoked on the hot path |
 | 3 | Cache miss: "validate schema, **write to cache**" | ⚠️ | Each validated cold plan is kept under its article (ADR-019): a repeat of that article gets it without the model. Writing it into the *semantic* cache, where other callers' similar queries would get it, is deliberately not built — a plan built from one caller's `siis_response` would be served to others (see open gaps) |
 | 3 | Handle unseen paraphrases semantically | ✅ | **84.6%** on the 26 calibration paraphrases · **100%** (92.6% to the right plan) on 27 test paraphrases written afterwards |
 | 4 | REST service with operational metadata | ✅ | `api/main.py`; `meta` carries latency, cache_hit, model, cost, tokens, fallback |
@@ -90,8 +90,8 @@ number — not an assertion.
 
 | Criterion | Target | Measured | Status |
 |---|---|---|---|
-| Fast-path P95 | ≤300 ms | **28.6 ms** (exact: 0.3 ms), sequential · 232 ms with 8 concurrent clients | ✅ |
-| Cold-path P95 | ≤8 s | **5215 ms** (`qwen2.5:1.5b`, N=33; 5413 ms over HTTP) | ✅ |
+| Fast-path P95 | ≤300 ms | **13.7 ms** (exact: 0.1 ms), sequential · 270 ms with 8 concurrent clients | ✅ |
+| Cold-path P95 | ≤8 s | **4389 ms** (`qwen2.5:1.5b`, N=33; 4325 ms over HTTP) | ✅ |
 | Cost predictability — inference cost/query | tracked | `meta.cost_usd` = $0.00 (local) | ✅ |
 | Cost predictability — **token utilization** | tracked | `meta.tokens.{prompt,completion}` | ✅ *(added during this audit)* |
 
@@ -116,7 +116,7 @@ number — not an assertion.
 | 1 — Foundation & validation harness | ✅ | Validators built **first**; 37 tests |
 | 2 — Dual retrieval (BM25 + dense), screen resolution, ordering | ✅ | All three present |
 | 3 — Semantic normalization, persistent cache, latency benchmark | ✅ | 130 pre-computed vectors, benchmarked |
-| 4 — REST endpoints, error boundaries, fallbacks, stress tests | ✅ | `scripts/stress_api.py`: 325/325 schema-valid responses over HTTP, cold start 21.7 s (29.2 s before ADR-023), malformed input answered with JSON 422; container cold start 17.3 s (measured earlier on Linux) |
+| 4 — REST endpoints, error boundaries, fallbacks, stress tests | ✅ | `scripts/stress_api.py`: 325/325 schema-valid responses over HTTP, cold start 13.6 s (29.2 s before ADR-023), malformed input answered with JSON 422; container cold start 17.3 s (measured earlier on Linux) |
 
 ---
 

@@ -1,4 +1,4 @@
 # python scripts/compare_models.py --models gemma3:4b --passes 3 --out reports/compare_models.json
-# exit=0  elapsed=304.1s
+# exit=0  elapsed=225.9s
 
-{"model": "gemma3:4b", "n": 33, "loads": 3, "p50_ms": 7089, "p95_ms": 10108, "max_ms": 10203, "plans_emitted": 33, "gate_pass": 30, "step_accuracy": 2.86, "auto_actions": 63, "auto_with_catalog_link_pct": 19, "link_agrees_with_reference_pct": 100, "per_load_gate_pass": [10, 10, 10], "per_load_link_pct": [19, 19, 19], "mean_prompt_tokens": 607, "mean_completion_tokens": 268, "names_repaired": 9, "screens_repaired": 39, "actions_emitted": 156, "gate_failures": {"G2": 3}, "empty_docs": {}, "params": "4.3B", "quant": "Q4_K_M"}
+{"model": "gemma3:4b", "n": 33, "loads": 3, "p50_ms": 5624, "p95_ms": 8237, "max_ms": 8283, "plans_emitted": 33, "gate_pass": 30, "step_accuracy": 2.86, "auto_actions": 63, "auto_with_catalog_link_pct": 19, "link_agrees_with_reference_pct": 100, "per_load_gate_pass": [10, 10, 10], "per_load_link_pct": [19, 19, 19], "mean_prompt_tokens": 607, "mean_completion_tokens": 268, "names_repaired": 9, "screens_repaired": 39, "actions_emitted": 156, "gate_failures": {"G2": 3}, "empty_docs": {}, "params": "4.3B", "quant": "Q4_K_M"}

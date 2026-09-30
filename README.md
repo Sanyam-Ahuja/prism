@@ -9,7 +9,7 @@ carries a deeplink that opens the right Settings screen in one tap.
 
 - **Known problems** come back from a semantic cache in milliseconds, with no model call.
 - **New problems** are planned live from the supplied support article by a
-  1.5-billion-parameter model running locally, in 3 to 5 seconds.
+  1.5-billion-parameter model running locally, in under 5 seconds (median 2.6 s).
 - **Every response** is schema-valid JSON with no web URLs. Every deeplink in it is
   copied from the provided catalog.
 
@@ -36,8 +36,8 @@ output behind each figure is in [`reports/`](reports/README.md).
 
 | Measure | Target | Measured |
 |---|---|---|
-| Cache hit, P95 latency | ≤ 300 ms | **0.3 ms** exact phrasing · **28.6 ms** new phrasing |
-| Live plan (cold path), P95 latency | ≤ 8 s | **5.2 s** |
+| Cache hit, P95 latency | ≤ 300 ms | **0.1 ms** exact phrasing · **13.7 ms** new phrasing |
+| Live plan (cold path), P95 latency | ≤ 8 s | **4.4 s** (median 2.6 s) |
 | Schema-valid responses | ≥ 99% | **100%**: 325/325 over HTTP, 20/20 batch lines |
 | Web-URL leaks | 0 | **0**, including URLs planted in the article or typed into the complaint |
 | Deeplinks that exist in the catalog | 100% | **100%**, because no model ever writes one |
@@ -59,7 +59,7 @@ flowchart TD
     K -->|no| L["Local model picks step<br/>numbers from the article"]
     L --> R["Retriever links each<br/>settings screen to<br/>a catalog deeplink"]
     R --> G{"Gates G0–G16<br/>pass?"}
-    G -->|yes| V["Live plan, 3–5 s"]
+    G -->|yes| V["Live plan, under 5 s"]
     G -->|no| N["Empty plan<br/>fallback: no_match"]
 ```
 
@@ -107,7 +107,7 @@ python -m uvicorn api.main:app --port 8000
 ```
 
 The first start downloads the `BAAI/bge-small-en-v1.5` encoder from Hugging Face.
-After that, the API is ready in about 22 s on the test laptop. For exact versions,
+After that, the API is ready in about 14 s on the test laptop. For exact versions,
 use `requirements.lock`, which pins CPU-only torch:
 `pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.lock`.
 
@@ -228,7 +228,7 @@ The main ones:
   placeholder, `bixby://dummy_positive`.
 - **A second problem that no plan covers is dropped without notice** when one
   complaint names two problems.
-- **A request with a new article always takes the live path** (3–5 s), even
+- **A request with a new article always takes the live path** (2.6 s median, 4.4 s P95), even
   when its complaint matches a cached plan, because the plan must come from the
   text that was sent.
 - **All figures come from one shared Windows laptop**, where latency varies by
@@ -264,6 +264,7 @@ participant-kit/    Theme 05's participant kit, kept as a reference for submissi
 | [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) | field rules, gates G0–G16, catalog hazards |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | decision records ADR-001 to ADR-023, open questions for the mentor |
 | [`docs/metrics.md`](docs/metrics.md) | measured results in the Appendix C format |
+| [`docs/BENCHMARK_ENVIRONMENT.md`](docs/BENCHMARK_ENVIRONMENT.md) | how the laptop was prepared for the final benchmark run, and what it changed |
 | [`docs/PS_ALIGNMENT.md`](docs/PS_ALIGNMENT.md) | requirement-by-requirement audit against the problem statement |
 | [`docs/RUBRIC.md`](docs/RUBRIC.md) | how step accuracy and deeplink relevance are scored |
 | [`docs/DEMO.md`](docs/DEMO.md) | demo video runbook: setup, scenes, numbers to quote |

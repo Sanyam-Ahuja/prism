@@ -1,5 +1,5 @@
 # python scripts/run_batch.py
 # PRISM_EXTRACT_MODEL=qwen2.5:1.5b
-# exit=0  elapsed=21.6s
+# exit=0  elapsed=10.6s
 
 queries=20  cache_hits=20 (100%)  schema_valid=20/20 (100%)

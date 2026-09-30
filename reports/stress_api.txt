@@ -1,23 +1,23 @@
 # python scripts/stress_api.py --cold 33
 # PRISM_EXTRACT_MODEL=qwen2.5:1.5b
-# exit=0  elapsed=133.6s
+# exit=0  elapsed=101.2s
 
-cold start: process launch -> /health 200 21.7 s, -> status ok 21.7 s
+cold start: process launch -> /health 200 13.6 s, -> status ok 13.6 s
 health: {"status": "ok", "plans": 11, "cache_vectors": 130, "catalog_uris": 578, "extractor": "qwen2.5:1.5b", "extractor_available": true, "error": null}
 
 path                                        n        P50        P95    target          (client-side wall time, over HTTP)
 ----------------------------------------------------------------------------------------------------------------------
-Cache hit - exact query match              40      5.5ms      7.9ms     300ms  PASS   schema-valid 40/40  pure-JSON 40/40
-Cache hit - unseen paraphrase (any path)   40     20.5ms     30.9ms     300ms  PASS   schema-valid 40/40  pure-JSON 40/40
-Miss, no siis_response (fallback)          12     20.0ms     25.2ms     300ms  PASS   schema-valid 12/12  pure-JSON 12/12
-Cold query - full pipeline                 33   3263.0ms   5413.1ms    8000ms  PASS   schema-valid 33/33  pure-JSON 33/33
-Hot burst, 8 concurrent clients           200     85.9ms    232.3ms     300ms  PASS   schema-valid 200/200  pure-JSON 200/200
+Cache hit - exact query match              40      1.6ms      2.6ms     300ms  PASS   schema-valid 40/40  pure-JSON 40/40
+Cache hit - unseen paraphrase (any path)   40     20.0ms     24.3ms     300ms  PASS   schema-valid 40/40  pure-JSON 40/40
+Miss, no siis_response (fallback)          12     19.7ms     21.5ms     300ms  PASS   schema-valid 12/12  pure-JSON 12/12
+Cold query - full pipeline                 33   2717.2ms   4324.6ms    8000ms  PASS   schema-valid 33/33  pure-JSON 33/33
+Hot burst, 8 concurrent clients           200    112.6ms    269.6ms     300ms  PASS   schema-valid 200/200  pure-JSON 200/200
 
-first cold request after startup : 4057 ms (contexts=1)
+first cold request after startup : 3109 ms (contexts=1)
 cold requests that missed cache  : 33/33   returned a plan: 33/33
-cold server-side P50/P95         : 3260 / 5410 ms
+cold server-side P50/P95         : 2714 / 4321 ms
 exact-match requests served hot  : 40/40
 no-siis misses given the fallback: 12/12
-hot burst throughput             : 71 req/s (200 requests, 8 workers)
+hot burst throughput             : 70 req/s (200 requests, 8 workers)
 malformed payloads answered JSON : 3/3 (status [422, 422, 422])
 SCHEMA-VALID OVERALL             : 325/325 = 100.0%

@@ -1,4 +1,4 @@
 # python scripts/compare_models.py --models llama3.2:3b --passes 3 --out reports/compare_models.json
-# exit=0  elapsed=200.7s
+# exit=0  elapsed=154.4s
 
-{"model": "llama3.2:3b", "n": 33, "loads": 3, "p50_ms": 4721, "p95_ms": 8168, "max_ms": 8377, "plans_emitted": 33, "gate_pass": 33, "step_accuracy": 2.91, "auto_actions": 57, "auto_with_catalog_link_pct": 37, "link_agrees_with_reference_pct": 71, "per_load_gate_pass": [11, 11, 11], "per_load_link_pct": [37, 37, 37], "mean_prompt_tokens": 594, "mean_completion_tokens": 243, "names_repaired": 21, "screens_repaired": 27, "actions_emitted": 123, "gate_failures": {}, "empty_docs": {}, "params": "3.2B", "quant": "Q4_K_M"}
+{"model": "llama3.2:3b", "n": 33, "loads": 3, "p50_ms": 3848, "p95_ms": 6925, "max_ms": 6961, "plans_emitted": 33, "gate_pass": 33, "step_accuracy": 2.91, "auto_actions": 57, "auto_with_catalog_link_pct": 37, "link_agrees_with_reference_pct": 71, "per_load_gate_pass": [11, 11, 11], "per_load_link_pct": [37, 37, 37], "mean_prompt_tokens": 594, "mean_completion_tokens": 243, "names_repaired": 21, "screens_repaired": 27, "actions_emitted": 123, "gate_failures": {}, "empty_docs": {}, "params": "3.2B", "quant": "Q4_K_M"}

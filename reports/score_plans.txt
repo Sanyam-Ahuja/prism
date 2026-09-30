@@ -1,5 +1,5 @@
 # python scripts/score_plans.py
-# exit=0  elapsed=0.8s
+# exit=0  elapsed=0.3s
 
 plan                                        step acc   compl  corr order
 --------------------------------------------------------------------------

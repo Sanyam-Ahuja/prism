@@ -1,5 +1,5 @@
 # python scripts/eval_multi_intent.py
-# exit=0  elapsed=82.8s
+# exit=0  elapsed=49.4s
 
 supplied queries alone reaching exactly their own plan: 20/20
 test paraphrases alone reaching exactly their own plan: 25/27

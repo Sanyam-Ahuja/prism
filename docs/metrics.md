@@ -29,13 +29,13 @@ Evaluated against reference ground truth scenarios across Battery, Display, Came
 ---
 
 ## 3. Latency Benchmarks (N >= 30 requests per path)
-Measured in-process, N = 40 / 40 / 33 (`reports/bench.txt`). End to end over HTTP the P95s are 7.9 / 30.9 / 5413 ms (`reports/stress_api.txt`).
+Measured in-process, N = 40 / 40 / 33 (`reports/bench.txt`), on a quiet machine. End to end over HTTP the P95s are 2.6 / 24.3 / 4325 ms (`reports/stress_api.txt`).
 
 | Execution Path | Target (P95) | P50 (ms) | P95 (ms) |
 | :--- | :--- | :--- | :--- |
-| Cache hit - exact query match | <= 300 ms | 0.1 | 0.3 |
-| Cache hit - unseen semantic paraphrase | <= 300 ms | 15.8 | 28.6 |
-| Cold query - full pipeline extraction & mapping | <= 8000 ms | 3199 | 5215 |
+| Cache hit - exact query match | <= 300 ms | 0.0 | 0.1 |
+| Cache hit - unseen semantic paraphrase | <= 300 ms | 11.8 | 13.7 |
+| Cold query - full pipeline extraction & mapping | <= 8000 ms | 2576 | 4389 |
 
 ---
 
@@ -54,9 +54,9 @@ Measured in-process, N = 40 / 40 / 33 (`reports/bench.txt`). End to end over HTT
 
 | Architecture Variant | Step Accuracy | Latency (P95) | Cost / Query | Key Observations |
 | :--- | :--- | :--- | :--- | :--- |
-| Baseline: Full LLM Deeplink Mapping | 2.92 — the same for all three: steps are chosen before mapping | 428 ms per descriptor (`qwen2.5:1.5b`) | $0.00 locally; +1 model call (226 tokens) per auto action | The model writes the URI: 1 of 43 is even in the catalog (precision@1 2.3%). Masked URIs are opaque, so this cannot meet PDF §4.2.2. Letting the model pick among the retriever's top 8 instead keeps every URI valid but reaches only 60.5% (217 ms P95, 237 tokens). |
-| Variant A: Hybrid BM25 + Dense Embedding Retrieval | 2.92 | 24.5 ms per descriptor | $0.00 | Shipped. Precision@1 95.3% on 43 labelled Display screens and 100% on 26 Battery/Camera/Performance screens. Best on free-form wording: recall@1 66.7%, recall@5 93.3%. |
-| Variant B: Pure Rules-Based Deeplink Mapping | 2.92 | 21.3 ms per descriptor | $0.00 | BM25 keywords with the same polarity, appliance and threshold rules, no embeddings; half A's mean time (10.7 vs 22.5 ms). Equal on catalog-worded screens (94.7%), but links 2 of 5 unindexed screens to wrong entries (90.7% overall) and collapses on free-form wording (recall@1 13.3%). |
+| Baseline: Full LLM Deeplink Mapping | 2.92 — the same for all three: steps are chosen before mapping | 279 ms per descriptor (`qwen2.5:1.5b`) | $0.00 locally; +1 model call (226 tokens) per auto action | The model writes the URI: 1 of 43 is even in the catalog (precision@1 2.3%). Masked URIs are opaque, so this cannot meet PDF §4.2.2. Letting the model pick among the retriever's top 8 instead keeps every URI valid but reaches only 60.5% (233 ms P95, 237 tokens). |
+| Variant A: Hybrid BM25 + Dense Embedding Retrieval | 2.92 | 16.9 ms per descriptor | $0.00 | Shipped. Precision@1 95.3% on 43 labelled Display screens and 100% on 26 Battery/Camera/Performance screens. Best on free-form wording: recall@1 66.7%, recall@5 93.3%. |
+| Variant B: Pure Rules-Based Deeplink Mapping | 2.92 | 4.7 ms per descriptor | $0.00 | BM25 keywords with the same polarity, appliance and threshold rules, no embeddings; under a third of A's mean time (4.4 vs 14.9 ms). Equal on catalog-worded screens (94.7%), but links 2 of 5 unindexed screens to wrong entries (90.7% overall) and collapses on free-form wording (recall@1 13.3%). |
 
 ---
 
@@ -71,7 +71,7 @@ Measured in-process, N = 40 / 40 / 33 (`reports/bench.txt`). End to end over HTT
 * **Settings hierarchy — screens the catalog does not index** get `bixby://dummy_positive` by design: Super steady, screen orientation, aspect ratio and Smart Switch in compiled plans (4 of 13 auto actions). Safe mode, Smart View, software update and clear-app-cache are also absent, though SIIS documents instruct them.
 * **Settings hierarchy — TV entries sit in the phone catalog.** The appliance filter drops refrigerators, washers and air conditioners but not the catalog's 18 TV entries ("via TV Settings"), so "enable adaptive brightness" resolves to DL-0498, a TV entry: one of Variant A's two misses on the 43 Display labels.
 * **Settings hierarchy — mislabelled entries are copied verbatim.** DL-0397/DL-0398 describe adaptive battery, but their `message` reads "Adaptive Display"; a battery plan shows that label.
-* **An unseen article always takes the model path.** With reference text supplied, the plan must derive from it (PDF §4.2.3), so a request with an article the engine has not planned before takes ~5 s even when its complaint matches a cached plan. A library article, as sent or reformatted, gets its compiled plan in 0.4 ms (P95).
+* **An unseen article always takes the model path.** With reference text supplied, the plan must derive from it (PDF §4.2.3), so a request with an article the engine has not planned before takes the cold path (2.6 s P50, 4.4 s P95) even when its complaint matches a cached plan. A library article, as sent or reformatted, gets its compiled plan in 0.3 ms (P95).
 * **Cold-path deeplink coverage is low.** 19% of cold-path auto actions (12 of 63) link a specific screen, 75% of those agreeing with the compiled plan, against 69% for compiled plans with the same resolver. Probing the screen the steps themselves open raised it from 6% (ADR-022); the 1.5B extractor still rarely names a catalog-worded screen, and the grounding check (ADR-018) rejects the ones it copies from its prompt.
 * **Cold-path nondeterminism is contained, not removed.** The first validated plan for an article is returned for every repeat of it (ADR-019). The model itself still gives 4 of 11 articles a different plan once Ollama has cached their prompt (`reports/determinism.txt`), so the first request for an article after a restart can differ from an earlier process's.
 * **Cold plans are not written into the semantic cache** (PDF §2, step [3]). They are kept per article, so only the same reference text gets them back. Serving them to other callers' similar queries would hand one caller's article-derived plan to other users — a poisoning risk that needs a decision first.
@@ -79,8 +79,8 @@ Measured in-process, N = 40 / 40 / 33 (`reports/bench.txt`). End to end over HTT
 * **The small extractor names actions poorly.** Across 33 cold plans the grounding check replaced 36 of 108 model-written action names with the article's own section headings (ADR-018): grounded, but some read as symptoms ("Nothing Is Visible on the Screen"). A 1B model is worse still: the 4-bit `llama3.2:1b` needed 63 of 72 replaced (`reports/README.md` §E).
 * **Free-form screen descriptions resolve poorly:** 30% on 20 free-form paraphrases at the shipped threshold, against 95.3% for the catalog-worded descriptors the extractor is prompted to write.
 * **Source data defects.** "Some things to check first" (3 of 20 queries) has its whitespace stripped, so few of its steps are recovered, and it embeds a contact URL despite the kit README; G0 removes it. `sample_output.json` has 9- and 12-word descriptions against the PDF's 5–7; we enforce the PDF (ADR-007).
-* **Cold start is 21.7 s** to `/health` = ok, down from 29.2 s: the catalog vectors now come from the build (0.5 s instead of 7.1 s, ADR-023). Loading the encoder itself remains (18.8 s).
-* **Measured on a shared Windows laptop.** With no code change the 8-client hot-path P95 was 217, 232 and 320 ms in three runs, and the `qwen2.5:1.5b` cold P95 ranged 5215–5475 ms across the day's runs. Runs that overlapped an unrelated heavy job were discarded and repeated. The host runs Python 3.13; the container pins 3.12.
+* **Cold start is 13.6 s** to `/health` = ok, down from 29.2 s: the catalog vectors now come from the build (0.3 s instead of 7.1 s, ADR-023). Loading the encoder itself remains (9.0 s).
+* **Measured on a shared Windows laptop.** Every figure above comes from one sequential run with nothing else running. Earlier runs the same day, with other work on the laptop and no code change, measured the cold P95 at 5215–5475 ms, the 8-client hot-path P95 at 217–320 ms (270 ms in the quiet run) and cold start at 21.7 s; every accuracy figure reproduced exactly. The host runs Python 3.13; the container pins 3.12.
 
 ---
 

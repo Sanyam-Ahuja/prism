@@ -1,4 +1,4 @@
 # python scripts/compare_models.py --models qwen2.5:1.5b --passes 3 --out reports/compare_models.json
-# exit=0  elapsed=139.4s
+# exit=0  elapsed=110.2s
 
-{"model": "qwen2.5:1.5b", "n": 33, "loads": 3, "p50_ms": 3326, "p95_ms": 5473, "max_ms": 5681, "plans_emitted": 33, "gate_pass": 33, "step_accuracy": 2.97, "auto_actions": 63, "auto_with_catalog_link_pct": 19, "link_agrees_with_reference_pct": 75, "per_load_gate_pass": [11, 11, 11], "per_load_link_pct": [19, 19, 19], "mean_prompt_tokens": 606, "mean_completion_tokens": 272, "names_repaired": 36, "screens_repaired": 30, "actions_emitted": 108, "gate_failures": {}, "empty_docs": {}, "params": "1.5B", "quant": "Q4_K_M"}
+{"model": "qwen2.5:1.5b", "n": 33, "loads": 3, "p50_ms": 2516, "p95_ms": 4315, "max_ms": 4357, "plans_emitted": 33, "gate_pass": 33, "step_accuracy": 2.97, "auto_actions": 63, "auto_with_catalog_link_pct": 19, "link_agrees_with_reference_pct": 75, "per_load_gate_pass": [11, 11, 11], "per_load_link_pct": [19, 19, 19], "mean_prompt_tokens": 606, "mean_completion_tokens": 272, "names_repaired": 36, "screens_repaired": 30, "actions_emitted": 108, "gate_failures": {}, "empty_docs": {}, "params": "1.5B", "quant": "Q4_K_M"}

@@ -380,10 +380,10 @@ The margin is why §7 emits indices instead of prose. Under naive full-text gene
 | component | measured |
 |---|---|
 | prompt eval (~600 tok) | 0.1–0.5 s |
-| generation | 84–500 tok (mean 272) at ~60–105 tok/s under the JSON grammar, varying with GPU state → 1–5 s; the 500-token cap sets the tail |
+| generation | 84–500 tok (mean 272) at ~60–124 tok/s under the JSON grammar (~124 on a quiet machine, about half that with other work running) → 1–5 s; the 500-token cap sets the tail |
 | deeplink resolution | ~0.2 s per plan with probes batch-encoded; it was ~1 s at one encoder call (~70 ms) per probe |
 | HTTP to Ollama | ~5 ms with one pooled client; it was ~3 s per request on Windows with a client per call and `localhost` → IPv6 fallback |
-| **end to end** | **P50 3199 ms · P95 5215 ms** (N=33, final code: step-target probes and the merge fix included) |
+| **end to end** | **P50 2576 ms · P95 4389 ms** (N=33, final code, quiet machine; 3199 / 5215 ms with other work running) |
 
 Two hard requirements follow:
 - `OLLAMA_KEEP_ALIVE=-1` — the 12.9 s load must never land on a request.

@@ -1,5 +1,5 @@
 # python scripts/eval_cache.py --tau 0.70 --high 0.70 --no-ood
-# exit=0  elapsed=22.5s
+# exit=0  elapsed=10.1s
 
 set=calibration  tau=0.7 high=0.7 margin=0.04  out-of-scope anchors=off  held-out n=26 (0 leaked)  negatives n=12
   hit rate          : 23/26 = 88.5%   (target >= 80%)

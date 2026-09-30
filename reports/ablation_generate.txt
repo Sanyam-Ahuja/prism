@@ -1,11 +1,11 @@
 # python scripts/ablation_baseline.py --mode generate
 # PRISM_EXTRACT_MODEL=qwen2.5:1.5b
-# exit=0  elapsed=44.2s
+# exit=0  elapsed=30.3s
 
 
 Baseline / generate   model=qwen2.5:1.5b  n=43
   catalog integrity (URI in catalog) : 1/43 = 2.3%
   precision@1 vs labels              : 1/43 = 2.3%
-  mean latency                       : 334 ms/descriptor
-  P50 / P95 latency                  : 329 / 428 ms/descriptor
+  mean latency                       : 271 ms/descriptor
+  P50 / P95 latency                  : 272 / 279 ms/descriptor
   tokens per descriptor (mean)       : 197 prompt + 29 completion

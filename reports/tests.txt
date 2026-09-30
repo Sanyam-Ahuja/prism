@@ -1,5 +1,5 @@
 # python -m pytest tests/ -q
-# exit=0  elapsed=125.0s
+# exit=0  elapsed=80.5s
 
 ........................................................................ [ 87%]
 .........s                                                               [100%]
@@ -9,4 +9,4 @@
     from starlette.testclient import TestClient as TestClient  # noqa
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-81 passed, 1 skipped, 1 warning in 122.49s (0:02:02)
+81 passed, 1 skipped, 1 warning in 79.15s (0:01:19)

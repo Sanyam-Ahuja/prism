@@ -14,7 +14,7 @@ One command, six scenes, about four minutes. Written for whoever records the dem
 
    It checks Ollama (and starts it if it is not running), loads `qwen2.5:1.5b` onto
    the GPU, starts the API with the demo page switched on, waits for `/health` to
-   report ok (about 22 s, almost all of it loading the sentence encoder), warms every
+   report ok (about 14 s, almost all of it loading the sentence encoder), warms every
    path so the first request on camera is not a slow one, and opens
    <http://127.0.0.1:8000/demo>. **Wait for `READY`.**
 4. In the browser press **F11** (full screen) at 100% zoom. At 1920×1080 the scene
@@ -51,8 +51,8 @@ All measured; sources in `docs/metrics.md`.
 
 | Claim | Value |
 |---|---|
-| Live (cold) plan, 95th percentile | **5.2 s** against an 8 s budget (33 runs, `qwen2.5:1.5b` on an RTX 4050 laptop GPU) |
-| Cached plan, 95th percentile | **under 1 ms** exact match · **about 30 ms** new phrasing, against 300 ms |
+| Live (cold) plan, 95th percentile | **4.4 s** against an 8 s budget; median 2.6 s (33 runs, `qwen2.5:1.5b` on an RTX 4050 laptop GPU) |
+| Cached plan, 95th percentile | **under 1 ms** exact match · **about 14 ms** new phrasing, against 300 ms |
 | Schema-valid responses | **325/325** over HTTP, **100%** of `results.jsonl` |
 | URL leaks | **0** — including a URL planted in the article or typed into the complaint |
 | New phrasings that find a cached plan | **84.6%** of 26 paraphrases the thresholds were tuned on · **100%** of 27 written afterwards (92.6% the right plan) |

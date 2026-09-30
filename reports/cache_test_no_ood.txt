@@ -1,5 +1,5 @@
 # python scripts/eval_cache.py --set test --no-ood
-# exit=0  elapsed=23.5s
+# exit=0  elapsed=10.5s
 
 set=test  tau=0.7 high=0.8 margin=0.04  out-of-scope anchors=off  held-out n=27 (0 leaked)  negatives n=38
   hit rate          : 27/27 = 100.0%   (target >= 80%)
