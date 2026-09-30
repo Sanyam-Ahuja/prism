@@ -1,0 +1,4 @@
+# python scripts/compare_models.py --models qwen2.5:3b --passes 3 --out reports/compare_models.json
+# exit=0  elapsed=212.4s
+
+{"model": "qwen2.5:3b", "n": 33, "loads": 3, "p50_ms": 4661, "p95_ms": 6434, "max_ms": 6633, "plans_emitted": 33, "gate_pass": 33, "step_accuracy": 2.75, "auto_actions": 36, "auto_with_catalog_link_pct": 17, "link_agrees_with_reference_pct": 100, "per_load_gate_pass": [11, 11, 11], "per_load_link_pct": [17, 17, 17], "mean_prompt_tokens": 606, "mean_completion_tokens": 262, "names_repaired": 79, "screens_repaired": 71, "actions_emitted": 59, "gate_failures": {}, "empty_docs": {}, "params": "3.1B", "quant": "Q4_K_M"}

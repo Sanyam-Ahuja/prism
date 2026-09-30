@@ -3,10 +3,11 @@
 Reports precision@1 split by catalog-match vs intended-dummy, so a resolver that
 games the score by answering DUMMY everywhere is visibly caught.
 """
-import argparse, json, sys, os
+import argparse, json, statistics, sys, os, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.deeplink import DeeplinkResolver, DUMMY
+from scripts.bench import pct
 
 
 def main():
@@ -19,6 +20,8 @@ def main():
     ap.add_argument("--k", type=int, default=8, help="candidates passed to the reranker")
     ap.add_argument("--min-conf", dest="min_conf", type=float, default=0.0,
                     help="abstain below this Choice confidence (docs suggest 0.5)")
+    ap.add_argument("--recall", action="store_true",
+                    help="also report ranking recall@1/@5, thresholding aside")
     a = ap.parse_args()
 
     enc = None
@@ -36,8 +39,10 @@ def main():
 
     hits = misses = 0
     dummy_ok = dummy_bad = 0
-    rows = []
+    rows, lat = [], []
+    r.resolve("warm up the encoder")                 # first-call overhead off the clock
     for L in labels:
+        t0 = time.perf_counter()
         if rr is None:
             m = r.resolve(L["descriptor"], tau=a.tau)
             got = "DUMMY" if (m.entry is None or m.entry["deeplink"] == DUMMY) else m.entry["id"]
@@ -56,6 +61,7 @@ def main():
                 abstain = getattr(rr, "chose_none", False) or \
                     (conf is not None and conf < a.min_conf) or score < a.tau
                 got = "DUMMY" if abstain else entries[bi]["id"]
+        lat.append((time.perf_counter() - t0) * 1000)
         m = type("M", (), {"score": score})()
         ok = got == L["expect"]
         if L["expect"] == "DUMMY":
@@ -75,6 +81,17 @@ def main():
     print(f"  catalog-match precision@1 : {hits}/{n_cat} = {hits/max(n_cat,1):.1%}")
     print(f"  intended-dummy correct    : {dummy_ok}/{n_dum} = {dummy_ok/max(n_dum,1):.1%}")
     print(f"  OVERALL                   : {(hits+dummy_ok)}/{len(labels)} = {(hits+dummy_ok)/len(labels):.1%}")
+    print(f"  mean resolve latency      : {statistics.mean(lat):.1f} ms/descriptor")
+    print(f"  P50 / P95 resolve latency : {pct(lat, 50):.1f} / {pct(lat, 95):.1f} ms/descriptor")
+
+    # Ranking quality separate from the abstention threshold: is the labelled
+    # entry in the top k at all? Catalog-labelled items only.
+    if a.recall:
+        cat = [L for L in labels if L["expect"] != "DUMMY"]
+        for k in (1, 5):
+            found = sum(any(e["id"] == L["expect"] for e, _ in r.candidates(L["descriptor"], k=k))
+                        for L in cat)
+            print(f"  ranking recall@{k}         : {found}/{len(cat)} = {found/max(len(cat),1):.1%}")
 
 
 if __name__ == "__main__":

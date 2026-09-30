@@ -27,6 +27,10 @@ _SMALL_WORDS = {"a", "an", "and", "as", "at", "by", "for", "from", "in", "of",
 _DANGLING = _SMALL_WORDS | {"your", "their", "its", "this", "that", "into",
                             "onto", "up", "out", "off", "over", "through"}
 
+# Words that open a trailing clause; an over-long benefit is cut before one.
+_BREAK = _SMALL_WORDS | {"by", "through", "when", "while", "so", "that", "which",
+                         "because", "before", "after", "during", "until", "without", "if"}
+
 _PROPER = {"samsung", "galaxy", "bixby", "android", "gmail", "wi-fi", "usb",
            "sim", "ldi", "qr", "hdr", "tv", "pin"}
 
@@ -101,6 +105,10 @@ def fit_title(text: str) -> str:
         while len(words) > 3 and words[0].lower() in _SMALL_WORDS:
             words.pop(0)
         words = words[:3]
+        # Nor may it end on one: "Quick troubleshooting for battery drain" must
+        # not become "Quick troubleshooting for".
+        while len(words) > 2 and words[-1].lower() in _DANGLING:
+            words.pop()
     while len(words) < 2:
         words.append("issue")
     return sentence_case(" ".join(words))
@@ -126,7 +134,10 @@ def fit_description(text: str) -> str:
     words = [w for w in t.split() if w]
     # "It will" is 2 of the 5-7, so the body carries 3-5.
     if len(words) > 5:
-        words = words[:5]
+        # End the clause at a natural break ("reduce battery drain | by lowering
+        # power use") rather than mid-phrase at word five ("...by lowering").
+        cut = next((i for i in range(3, 6) if words[i].lower() in _BREAK), None)
+        words = words[:cut] if cut else words[:5]
         # Truncation must not leave a dangling function word ("...side by").
         while len(words) > 3 and words[-1].lower() in _DANGLING:
             words.pop()

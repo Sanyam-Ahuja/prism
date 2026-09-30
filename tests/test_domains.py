@@ -7,6 +7,7 @@ coverage is a function of supplied SIIS text, which we only have for Display.
 """
 import glob
 import json
+import os
 import sys
 
 import pytest
@@ -29,7 +30,7 @@ def resolver():
 
 
 def test_probe_corpus_covers_the_unseen_domains():
-    names = {p.rsplit("/", 1)[-1] for p in PROBES}
+    names = {os.path.basename(p) for p in PROBES}
     assert names == {"battery.json", "camera.json", "performance.json"}
 
 

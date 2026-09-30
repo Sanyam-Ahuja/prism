@@ -1,0 +1,21 @@
+# python scripts/eval_multi_intent.py
+# exit=0  elapsed=34.9s
+
+supplied queries alone reaching their own plan: 20/20
+
+known + known: 340 complaints (ordered pairs, different documents)
+  plan for the first-mentioned problem    :  325 = 95.6%
+  plan for the second-mentioned problem   :   15 = 4.4%
+  plan for neither (a third document)     :    0 = 0.0%
+  cache miss -> no_siis_context fallback  :    0 = 0.0%
+  both problems answered                  :    0 (a response holds one plan)
+
+known + unknown: 60 complaints (each supplied query + 3 uncovered problems)
+  plan for the known problem, other dropped:   60 = 100.0%
+  plan for a different document           :    0 = 0.0%
+  cache miss -> no_siis_context fallback  :    0 = 0.0%
+
+PDF section 1 examples:
+  Screen flickers and the battery dies fast                  sim=0.832  hit  Screen flickers when using the Camera on a Galaxy phone
+  My phone got slow after the update                         sim=0.725  hit  Touchscreen issues on a Galaxy phone or tablet
+  Swipe gestures go the wrong way after installing an app    sim=0.732  hit  Touchscreen issues on a Galaxy phone or tablet

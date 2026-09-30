@@ -15,7 +15,7 @@ from engine.segment import is_actionable, segment
 from engine.variations import generate
 from validators.gates import (Ctx, blocking, g6_description, load_ctx,
                               validate_envelope)
-from validators.scrub import has_url, scrub, scrub_deep
+from validators.scrub import has_url, scrub, scrub_deep, strip_urls
 
 CTX = load_ctx("data/deeplinks.json")
 
@@ -67,6 +67,15 @@ def test_scrub_preserves_bixby_uris():
 def test_scrub_preserves_valid_steps():
     s = "Tap Storage, then tap Clear cache."
     assert scrub(s) == s
+
+
+def test_strip_urls_keeps_the_rest_of_the_complaint():
+    """The complaint is the user's own words: only the link may go (api/main.py)."""
+    assert strip_urls("my screen is black, https://x.com/fix did not help") == \
+        "my screen is black, did not help"
+    assert strip_urls("see [this guide](https://x.com/g) and www.x.com") == "see this guide and"
+    s = "Screen flickers and the battery dies fast"
+    assert strip_urls(s) is s                       # no URL: returned unchanged
 
 
 # ----------------------------------------------------------------- known gates
@@ -261,6 +270,59 @@ def test_deeplink_resolution_is_deterministic():
     for d in ["enable touch sensitivity", "open the navigation bar settings page"]:
         ids = {(r.resolve(d).entry or {}).get("id") for _ in range(5)}
         assert len(ids) == 1
+
+
+def test_cold_path_rejects_names_its_steps_do_not_support():
+    """The 1.5B extractor named a battery action after a prompt example
+    ("Enable Touch Sensitivity") and it was deeplinked to that screen. A name
+    must share a content word with its own steps or their heading."""
+    from engine.cold import grounded, heading_name
+    battery = ("Navigate to and open Settings. Tap Battery. Review which apps have "
+               "consumed the most power. Step 1: Review Battery Usage")
+    assert not grounded("Enable Touch Sensitivity", battery)
+    assert not grounded("adjust the motion smoothness value", battery)
+    assert grounded("Review Battery Usage", battery)
+    assert grounded("Open Settings", battery)          # generic words claim nothing
+    assert heading_name("Step 1: Review Battery Usage", "Battery drains") == "Review Battery Usage"
+    assert heading_name("2. Open Smart Switch App", "Transfer") == "Open Smart Switch App"
+    assert heading_name("Battery drains", "Battery drains") is None
+    # The model sometimes writes the category as the name.
+    assert not grounded("auto", battery) and not grounded("manual", battery)
+
+
+def test_salvage_keeps_complete_actions_from_truncated_output():
+    """num_predict can cut the extractor off mid-action (observed on "Use Multi
+    window": 500 tokens, done_reason=length). Finished actions must survive."""
+    from engine.cold import salvage
+    raw = ('{"topic": "Multi window", "title": "Multi window issues", "actions": ['
+           '{"name": "Enable multi window", "screen": "open multi window settings", '
+           '"category": "auto", "benefit": "use two apps", "steps": [1, 2]}, '
+           '{"name": "Improve touch", "screen": "", "category": "manual", '
+           '"benefit": "Improve touch response", "steps": [\n 23,\n')
+    sk = salvage(raw)
+    assert sk["title"] == "Multi window issues"
+    assert [a["name"] for a in sk["actions"]] == ["Enable multi window"]
+    # Cut before any action completed: nothing to salvage.
+    assert salvage('{"topic": "x", "title": "y", "actions": [{"name": "a"') is None
+
+
+def test_batched_query_vectors_resolve_like_single_encodes():
+    """The cold path batch-encodes a plan's probes (engine/cold.py) for speed.
+
+    Batching pads sequences together, so vectors can differ in the last float
+    bits; that must never change which entry a descriptor resolves to.
+    """
+    from engine.embed import get_encoder
+    r = DeeplinkResolver("data/deeplinks.json", encoder=get_encoder())
+    descs = [L["descriptor"] for f in ("tests/fixtures/deeplink_labels.json",
+                                       "tests/fixtures/deeplink_labels_domains.json",
+                                       "tests/fixtures/deeplink_labels_paraphrase.json")
+             for L in json.load(open(f))]
+    qv = r.encode_queries(descs)
+    for d in descs:
+        single, batched = r.resolve(d), r.resolve(d, qv=qv[d])
+        assert (single.entry or {}).get("id") == (batched.entry or {}).get("id"), d
+        assert abs(single.score - batched.score) < 1e-4, d
 
 
 def test_compiled_artifacts_are_reproducible(tmp_path):

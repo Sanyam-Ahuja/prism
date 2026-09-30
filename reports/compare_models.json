@@ -1,0 +1,175 @@
+[
+  {
+    "model": "qwen2.5:1.5b",
+    "n": 33,
+    "loads": 3,
+    "p50_ms": 3128,
+    "p95_ms": 5223,
+    "max_ms": 5435,
+    "plans_emitted": 33,
+    "gate_pass": 33,
+    "step_accuracy": 2.97,
+    "auto_actions": 66,
+    "auto_with_catalog_link_pct": 9,
+    "link_agrees_with_reference_pct": 50,
+    "per_load_gate_pass": [
+      11,
+      11,
+      11
+    ],
+    "per_load_link_pct": [
+      9,
+      9,
+      9
+    ],
+    "mean_prompt_tokens": 606,
+    "mean_completion_tokens": 272,
+    "names_repaired": 36,
+    "screens_repaired": 30,
+    "actions_emitted": 111,
+    "gate_failures": {},
+    "empty_docs": {},
+    "params": "1.5B",
+    "quant": "Q4_K_M"
+  },
+  {
+    "model": "llama3.2:3b",
+    "n": 33,
+    "loads": 3,
+    "p50_ms": 5196,
+    "p95_ms": 8486,
+    "max_ms": 9090,
+    "plans_emitted": 33,
+    "gate_pass": 33,
+    "step_accuracy": 2.91,
+    "auto_actions": 57,
+    "auto_with_catalog_link_pct": 16,
+    "link_agrees_with_reference_pct": 33,
+    "per_load_gate_pass": [
+      11,
+      11,
+      11
+    ],
+    "per_load_link_pct": [
+      16,
+      16,
+      16
+    ],
+    "mean_prompt_tokens": 594,
+    "mean_completion_tokens": 243,
+    "names_repaired": 21,
+    "screens_repaired": 27,
+    "actions_emitted": 123,
+    "gate_failures": {},
+    "empty_docs": {},
+    "params": "3.2B",
+    "quant": "Q4_K_M"
+  },
+  {
+    "model": "qwen2.5:3b",
+    "n": 33,
+    "loads": 3,
+    "p50_ms": 4661,
+    "p95_ms": 6434,
+    "max_ms": 6633,
+    "plans_emitted": 33,
+    "gate_pass": 33,
+    "step_accuracy": 2.75,
+    "auto_actions": 36,
+    "auto_with_catalog_link_pct": 17,
+    "link_agrees_with_reference_pct": 100,
+    "per_load_gate_pass": [
+      11,
+      11,
+      11
+    ],
+    "per_load_link_pct": [
+      17,
+      17,
+      17
+    ],
+    "mean_prompt_tokens": 606,
+    "mean_completion_tokens": 262,
+    "names_repaired": 79,
+    "screens_repaired": 71,
+    "actions_emitted": 59,
+    "gate_failures": {},
+    "empty_docs": {},
+    "params": "3.1B",
+    "quant": "Q4_K_M"
+  },
+  {
+    "model": "gemma3:1b",
+    "n": 33,
+    "loads": 3,
+    "p50_ms": 4257,
+    "p95_ms": 5757,
+    "max_ms": 24054,
+    "plans_emitted": 24,
+    "gate_pass": 21,
+    "step_accuracy": 2.9,
+    "auto_actions": 30,
+    "auto_with_catalog_link_pct": 10,
+    "link_agrees_with_reference_pct": 0,
+    "per_load_gate_pass": [
+      7,
+      7,
+      7
+    ],
+    "per_load_link_pct": [
+      10,
+      10,
+      10
+    ],
+    "mean_prompt_tokens": 483,
+    "mean_completion_tokens": 256,
+    "names_repaired": 51,
+    "screens_repaired": 36,
+    "actions_emitted": 69,
+    "gate_failures": {
+      "G12": 3
+    },
+    "empty_docs": {
+      "Blank or black display on a Samsung phon": 3,
+      "Transfer Secure folder with Smart Switch": 3,
+      "Cracked or bleeding screen on Galaxy pho": 3
+    },
+    "params": "999.89M",
+    "quant": "Q4_K_M"
+  },
+  {
+    "model": "gemma3:4b",
+    "n": 33,
+    "loads": 3,
+    "p50_ms": 6968,
+    "p95_ms": 10061,
+    "max_ms": 10198,
+    "plans_emitted": 33,
+    "gate_pass": 30,
+    "step_accuracy": 2.86,
+    "auto_actions": 63,
+    "auto_with_catalog_link_pct": 10,
+    "link_agrees_with_reference_pct": 50,
+    "per_load_gate_pass": [
+      10,
+      10,
+      10
+    ],
+    "per_load_link_pct": [
+      10,
+      10,
+      10
+    ],
+    "mean_prompt_tokens": 607,
+    "mean_completion_tokens": 268,
+    "names_repaired": 9,
+    "screens_repaired": 39,
+    "actions_emitted": 156,
+    "gate_failures": {
+      "G2": 3
+    },
+    "empty_docs": {},
+    "params": "4.3B",
+    "quant": "Q4_K_M"
+  }
+]

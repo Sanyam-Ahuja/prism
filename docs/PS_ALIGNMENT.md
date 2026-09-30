@@ -18,7 +18,8 @@ number — not an assertion.
 | 1 | Enforce length, phrasing, zero-leak constraints | ✅ | `validators/gates.py` (G1–G6), `validators/scrub.py` (G0) — programmatic, not prompt-only |
 | 2 | Deeplink Mapping: match screens to catalog via semantic + keyword | ✅ | `engine/deeplink.py` — BM25 + bge-small dense, RRF fusion |
 | 2 | Sequencing: non-invasive first → critical last | ✅ | `engine/assemble.py::order_actions`; gate G14; `test_ordering_places_critical_last` |
-| 3 | Fast-Path cache: hit ≤300 ms without LLM | ✅ | `engine/cache.py`; **P95 13.7 ms**; no model invoked on the hot path |
+| 3 | Fast-Path cache: hit ≤300 ms without LLM | ✅ | `engine/cache.py`; **P95 28.6 ms** paraphrase / 0.6 ms exact in-process (29.6 / 17.9 ms over HTTP); no model invoked on the hot path |
+| 3 | Cache miss: "validate schema, **write to cache**" | ❌ | Cold plans are validated but never written back — deliberately, pending a decision: a shared semantic cache would serve a plan built from one caller's `siis_response` to other callers (see open gaps) |
 | 3 | Handle unseen paraphrases semantically | ✅ | **84.6%** on 26 held-out paraphrases |
 | 4 | REST service with operational metadata | ✅ | `api/main.py`; `meta` carries latency, cache_hit, model, cost, tokens, fallback |
 
@@ -44,7 +45,7 @@ number — not an assertion.
 
 | # | Constraint | Status | Evidence |
 |---|---|---|---|
-| 1 | **Zero URL leaks** (http, https, www., markdown) | ✅ | G0 runs first and last; sentence-aware. **0 leaks** across all output. 4 parametrised tests |
+| 1 | **Zero URL leaks** (http, https, www., markdown) | ✅ | G0 runs first and last; sentence-aware. The complaint is stripped of links on input, since the response echoes it, and 422 errors do not echo the payload. **0 leaks** across all output. 4 parametrised tests + 4 for the complaint path |
 | 2 | **Catalog integrity** — no hallucinated or altered URIs | ✅ | The LLM never sees a URI (ADR-002). G9 asserts membership. `test_resolver_never_invents_a_uri` |
 | 3 | **No hallucinated steps** — derive purely from reference text | ✅ | Steps are *indices* into the source (ADR-001). `test_every_step_traces_to_source_text` |
 | 3 | Empty `contexts: []` + `"fallback": "no_match"` when no solution | ✅ | `api/main.py`; both fallbacks return HTTP 200 |
@@ -69,16 +70,17 @@ number — not an assertion.
 
 | Criterion | Target | Measured | Status |
 |---|---|---|---|
-| Schema conformance | 100% | **100%** (20/20) | ✅ |
+| Schema conformance | 100% | **100%** (20/20 batch · 325/325 over HTTP) | ✅ |
 | Zero leakage | 0 | **0** | ✅ |
 | Deterministic execution — identical inputs | consistent | byte-identical ×5 | ✅ |
 | Deterministic execution — *semantically* identical | consistent | S22 ≡ S24 Ultra → same plan | ✅ |
+| Deterministic execution — cold path | consistent | stable back-to-back and interleaved, but 4 of 11 plans change once the server has cached their prompt (`reports/determinism.txt`) | ⚠️ |
 
 ### 6.2 Information Retrieval & Deeplink Precision
 
 | Criterion | Target | Measured | Status |
 |---|---|---|---|
-| Screen resolution accuracy (exact screen, not parent menu) | — | **100%** precision@1 on 43 catalog-register labels | ✅ |
+| Screen resolution accuracy (exact screen, not parent menu) | — | **94.7%** precision@1 (95.3% overall) on 43 Display labels · **100%** on 26 Battery/Camera/Performance labels | ✅ |
 | ...on free-form descriptors | — | 30% overall | ⚠️ documented limitation |
 | Semantic paraphrase hit rate | ≥80% | **84.6%** (26 held-out, 0 leaked) | ✅ |
 | Plan hierarchy by disruption | — | auto → manual → critical, G14-enforced | ✅ |
@@ -87,8 +89,8 @@ number — not an assertion.
 
 | Criterion | Target | Measured | Status |
 |---|---|---|---|
-| Fast-path P95 | ≤300 ms | **13.7 ms** (exact: 0.0 ms) | ✅ |
-| Cold-path P95 | ≤8 s | **7333 ms** | ✅ |
+| Fast-path P95 | ≤300 ms | **28.6 ms** (exact: 0.6 ms), sequential · 217 ms with 8 concurrent clients | ✅ |
+| Cold-path P95 | ≤8 s | **5345 ms** (`qwen2.5:1.5b`, N=33; 5263 ms over HTTP) | ✅ |
 | Cost predictability — inference cost/query | tracked | `meta.cost_usd` = $0.00 (local) | ✅ |
 | Cost predictability — **token utilization** | tracked | `meta.tokens.{prompt,completion}` | ✅ *(added during this audit)* |
 
@@ -113,7 +115,7 @@ number — not an assertion.
 | 1 — Foundation & validation harness | ✅ | Validators built **first**; 37 tests |
 | 2 — Dual retrieval (BM25 + dense), screen resolution, ordering | ✅ | All three present |
 | 3 — Semantic normalization, persistent cache, latency benchmark | ✅ | 130 pre-computed vectors, benchmarked |
-| 4 — REST endpoints, error boundaries, fallbacks, stress tests | ⚠️ | Endpoints and both fallbacks done; **cold-start not measured, container never built** |
+| 4 — REST endpoints, error boundaries, fallbacks, stress tests | ✅ | `scripts/stress_api.py`: 325/325 schema-valid responses over HTTP, cold start 29.2 s, malformed input answered with JSON 422; container cold start 17.3 s (measured earlier on Linux) |
 
 ---
 
@@ -123,29 +125,38 @@ number — not an assertion.
 |---|---|---|
 | Appendix B — response envelope (`query`, `query_variations`, `response`, `meta`) | ✅ | Emitted as the superset; `tests/fixtures/appendix_b.json` passes every gate |
 | Appendix B — `results.jsonl` one object per line | ✅ | `scripts/run_batch.py` |
-| Appendix C — metrics.md template | ⚠️ | All sections populated **except** the ablation Baseline row |
+| Appendix C — metrics.md template | ✅ | Follows the template verbatim: same sections, tables, rows and columns, every cell filled from `reports/` (re-measured 2026-09-30). Supporting tables in `reports/README.md` |
 
 ---
 
 ## Open gaps against the PS
 
-Re-audited 2026-09-22 against the clean (non-OCR) problem statement.
+Re-audited 2026-09-22 against the clean (non-OCR) problem statement; numbers
+refreshed 2026-09-30 after the extractor change (ADR-017).
 
 | # | Gap | PS reference | Severity |
 |---|---|---|---|
-| 1 | **Plan coverage is Display-only.** The pipeline is domain-independent — Stage 3 scores 96.2% on a 26-label Battery/Camera/Performance set and a probe corpus drives all three through to gate-passing plans — but no *plans* exist for domains whose SIIS text we were never given | §3, Appendix C §2 | **High**, and partly not ours (M-Q4) |
-| 2 | **Deeplink relevance 1.67 / 2.0.** 3 of 13 auto actions land on the right feature area but not the exact screen | §6.2, Appendix C §2 | Medium |
-| 3 | **Cold-path latency unverified on current code.** The recorded 7333 ms P95 predates several changes and the GPU is shared with an unrelated training job; measurements under contention are discarded rather than reported | §6.3 | Medium — pending an idle GPU |
-| 4 | **31% of auto actions use `dummy_positive`.** Driven by genuine catalog gaps (no safe mode, auto-rotate, Smart View, aspect ratio, clear-app-cache, Smart Switch), not by guessing | §3, Appendix C §1 | Medium — data-bound |
-| 5 | Free-form descriptor resolution 30% at the shipped threshold | §6.2 | Low — Stage 3 receives normalized descriptors |
-| 6 | `queries.json` and 4 of 5 `samples/` never supplied | §3 | ➖ Not ours — M-Q4 |
-| 7 | `sample_output.json` contradicts §4.1 (9 and 12-word descriptions) | §4.1 | ➖ Spec conflict — M-Q2 |
-| 8 | `meta` carries `tokens` beyond Appendix B's four keys | §6.3 vs Appendix B | ➖ Deliberate, switchable — ADR-016, M-Q3 |
+| 1 | **Plan coverage is Display-only.** The pipeline is domain-independent — Stage 3 scores 100% on a 26-label Battery/Camera/Performance set and a probe corpus drives all three through to gate-passing plans — but no *plans* exist for domains whose SIIS text we were never given | §3, Appendix C §2 | **High**, and partly not ours (M-Q4) |
+| 2 | **Cold plans are never written back to the cache.** The PDF's miss path ends "write to cache". A shared semantic cache would serve a plan built from one caller's `siis_response` to other callers' similar queries, so this needs a decision, not just code | §2 [3] | **High** — needs a decision |
+| 3 | **Cold-path deeplink coverage is 3–9%** (auto actions with a specific screen) against 69% for compiled plans, half of them agreeing with the compiled plan. The 1.5B extractor rarely names a specific screen, and the grounding check refuses the ones it copies from the prompt (ADR-018); the resolver is not the bottleneck | Appendix C §1, §6.2 | Medium |
+| 4 | **Cold-path output depends on the server's prompt cache.** 4 of 11 documents yield a different plan once their exact prompt is cached (`reports/determinism.txt`). Fix identified, not applied: memoize the plan by a hash of the SIIS text, which is all the extractor sees | §6.1 | Medium |
+| 5 | **Deeplink relevance 1.67 / 2.0.** 3 of 13 auto actions land on the right feature area but not the exact screen | §6.2, Appendix C §2 | Medium |
+| 6 | **TV entries are not filtered.** "enable adaptive brightness" resolves to DL-0498, a TV Settings entry; the appliance filter misses the catalog's 18 TV entries | §6.2 | Medium |
+| 7 | **31% of auto actions use `dummy_positive`.** Driven by genuine catalog gaps (no safe mode, auto-rotate, Smart View, aspect ratio, clear-app-cache, Smart Switch), not by guessing | §3, Appendix C §1 | Medium — data-bound |
+| 8 | **Hot path shares the CPU:** 8-client P95 217 ms on a quiet machine, 320 ms in a busier run with no code change; sequential P95 is 29 ms | §6.3 | Low |
+| 9 | Free-form descriptor resolution 30% at the shipped threshold | §6.2 | Low — Stage 3 receives normalized descriptors |
+| 10 | `queries.json` and 4 of 5 `samples/` never supplied | §3 | ➖ Not ours — M-Q4 |
+| 11 | `sample_output.json` contradicts §4.1 (9 and 12-word descriptions) | §4.1 | ➖ Spec conflict — M-Q2 |
+| 12 | `meta` carries `tokens` beyond Appendix B's four keys | §6.3 vs Appendix B | ➖ Deliberate, switchable — ADR-016, M-Q3 |
+| 13 | **Multi-intent complaints get one plan.** Two supplied complaints joined: the first-mentioned problem's plan comes back 95.6% of the time, never both; an uncovered second problem is dropped silently. The PDF's own "My phone got slow after the update" false-hits *Touchscreen issues* (similarity 0.725) instead of falling back (`reports/multi_intent.txt`) | §1, §6.2, Appendix C §6 | Medium |
 
-**Closed since the first audit:** the ablation Baseline is now measured (18.6%
-catalog integrity, 2.3% precision@1); the container builds, runs offline and its
-cold start is measured at 17.3 s; both Appendix C §2 judged scores are filled with
-an auditable rubric.
+**Closed since the first audit:** the ablation Baseline is measured (re-measured
+with `qwen2.5:1.5b`: 2.3% catalog integrity when the model writes URIs, 60.5%
+precision@1 when it selects among candidates, against 95.3% for the shipped
+resolver); the container builds, runs offline and its cold start is measured at
+17.3 s; both Appendix C §2 judged scores are filled with an auditable rubric; the
+cold-path latency is re-measured on current code (P95 5345 ms, N=33) and the
+HTTP stress test is in place.
 
 ---
 
@@ -163,9 +174,16 @@ an auditable rubric.
 | 8 | Two skeleton descriptors named the wrong screen | rubric scoring |
 | 9 | §6.1 required determinism and nothing tested it | first alignment audit |
 | 10 | §6.3 required token tracking; the API dropped what `cold.py` computed | first alignment audit |
+| 11 | A new HTTP client per Ollama call, plus `localhost` resolving to IPv6 first: ~3 s of every cold request on Windows | profiling one cold call against Ollama's own timings |
+| 12 | One encoder call per deeplink probe: ~1 s per cold plan | the same profile |
+| 13 | Extractor output cut off at `num_predict` was discarded as "no plan" | surfacing the exceptions `_extract` swallowed |
+| 14 | The probe-corpus test split paths on `/`, failing on Windows | running the suite on Windows |
+| 15 | The 1.5B extractor copied the prompt's example screen names into unrelated plans (13 of 57 actions; "Enable Touch Sensitivity" on a battery article, deeplinked there). Fixed by a grounding check in code plus schema length bounds (ADR-018); removing the examples instead was tried and made things worse | rehearsing the demo |
+| 16 | Trimming left titles and descriptions ending mid-phrase ("Quick troubleshooting for", "…by lowering") | rehearsing the demo |
+| 17 | A URL typed into the complaint came back out: echoed in `query` on every path, and on the cold path copied into the generated `query_variations`, where the URL gate then discarded a valid plan while the `no_match` fallback still returned the link. FastAPI's default 422 body also echoed rejected input, links and all. Fixed: the complaint is stripped of links on input (only the link, not the sentence around it), and 422s no longer echo the payload | writing the Appendix C §6 edge cases |
 
 Most of these were found by *looking at output*, not by tests passing. The two
 worst — 4 and 5 — were introduced by me and hidden by a test with a side effect on
 the thing it verified.
 
-Test count: 31 → **63**.
+Test count: 31 → 63 → 68 → **72** (71 pass; 1 skips without the vendored encoder).

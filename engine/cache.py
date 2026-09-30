@@ -15,9 +15,9 @@ from engine.normalize import normalize
 
 # Two-factor acceptance. A single similarity threshold cannot satisfy both the
 # >=80% paraphrase hit rate and zero false hits on out-of-domain queries: the
-# curves cross (see docs/metrics.md). Out-of-domain queries are weakly similar to
-# every plan, so the margin over the best OTHER plan discriminates them where raw
-# similarity cannot.
+# curves cross (reports/README.md, section C). Out-of-domain queries are weakly
+# similar to every plan, so the margin over the best OTHER plan discriminates
+# them where raw similarity cannot.
 TAU_HIT = float(os.environ.get("PRISM_TAU_HIT", "0.70"))      # floor
 TAU_HIGH = float(os.environ.get("PRISM_TAU_HIGH", "0.80"))    # accept regardless of margin
 TAU_MARGIN = float(os.environ.get("PRISM_TAU_MARGIN", "0.04"))

@@ -365,6 +365,16 @@ Derived budgets:
 
 The margin is why §7 emits indices instead of prose. Under naive full-text generation the cold path is ~18 s and **fails C7**.
 
+**Measured, 2026-09-30** (RTX 4050 Laptop 6 GiB, `qwen2.5:1.5b`, warm; ADR-017, `docs/metrics.md` §3). The derived budget above underestimated two components and missed one:
+
+| component | measured |
+|---|---|
+| prompt eval (~600 tok) | 0.1–0.5 s |
+| generation | 84–500 tok (mean 272) at ~60–105 tok/s under the JSON grammar, varying with GPU state → 1–5 s; the 500-token cap sets the tail |
+| deeplink resolution | ~0.2 s per plan with probes batch-encoded; it was ~1 s at one encoder call (~70 ms) per probe |
+| HTTP to Ollama | ~5 ms with one pooled client; it was ~3 s per request on Windows with a client per call and `localhost` → IPv6 fallback |
+| **end to end** | **P50 3343 ms · P95 5345 ms** (N=33) |
+
 Two hard requirements follow:
 - `OLLAMA_KEEP_ALIVE=-1` — the 12.9 s load must never land on a request.
 - The Stage 2 model must fit in 7.5 GiB VRAM. `gemma4:26b` (18 GB) **does not** and would spill to CPU. See TECH_PLAN.md §4.

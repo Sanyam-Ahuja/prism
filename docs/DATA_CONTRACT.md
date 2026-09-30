@@ -183,6 +183,8 @@ Implemented in `validators/`. Every gate is a pure function `(obj) -> list[Viola
 
 G0 runs first (so later gates see clean text) and again last (so repairs cannot reintroduce a URL).
 
+The complaint itself is user input, not generated text, but the response echoes it in `query` and the cold path builds `query_variations` from it. The API therefore strips links from it on input (`strip_urls`: only the link goes, not the sentence around it, which would discard the problem description) and rejects a query with nothing left. Validation errors (422) do not echo the payload.
+
 ---
 
 ## 8. Source-data facts the tests must pin

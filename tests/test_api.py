@@ -15,6 +15,7 @@ sys.path.insert(0, ".")
 
 import api.main as m
 from api.main import app
+from validators.gates import g0_no_urls
 
 
 @pytest.fixture(scope="module")
@@ -40,6 +41,25 @@ def test_health_reports_subsystems(client):
     assert b["status"] in ("ok", "degraded", "down")
     assert b["plans"] == 11
     assert b["catalog_uris"] == 578
+
+
+def test_demo_page_is_off_by_default(client):
+    """The recording aid (docs/DEMO.md) must not widen the graded surface of PDF §5."""
+    assert client.get("/demo").status_code == 404
+    assert client.get("/demo/presets").status_code == 404
+
+
+def test_demo_scenes_reference_real_articles():
+    """A typo in demo/scenarios.json would otherwise surface mid-recording."""
+    from api.demo import presets
+    p = json.loads(presets().body)
+    ids = {a["id"] for a in p["articles"]}
+    for s in p["scenarios"]:
+        assert s["query"].strip()
+        assert s.get("article") is None or s["article"] in ids, s["id"]
+        assert s["expect"] in ("hit", "cold", "fallback")
+        if s.get("inject"):
+            assert s["inject"] in s["article_override"]["content"]
 
 
 def test_cache_hit_returns_plan(client):
@@ -129,6 +149,43 @@ def test_oversized_query_is_rejected(client):
 
 def test_empty_query_is_rejected(client):
     assert client.post("/v1/troubleshoot", json={"query": ""}).status_code == 422
+
+
+# ------------------------------------------------------------- URL hygiene
+def test_link_in_the_query_is_not_echoed(client):
+    """PDF 4.2.1: the response echoes the complaint, so a link in it must go."""
+    q = "my phone display is totally black and wont switch on"
+    r = client.post("/v1/troubleshoot", json={"query": f"{q} https://example.com/fix"})
+    d = _is_envelope(r.text)
+    assert g0_no_urls(d) == []
+    assert d["query"] == q
+    assert d["meta"]["cache_hit"] is True          # looked up on the cleaned complaint
+
+
+def test_link_in_the_query_never_reaches_the_cold_path(client):
+    """The cold path builds paraphrases from the query. A link there made the URL
+    gate discard a valid plan, and the fallback still returned the link."""
+    cold = m._state["cold"]
+    orig, seen = cold.run, []
+    cold.run = lambda q, s: seen.append(q)
+    try:
+        r = client.post("/v1/troubleshoot",
+                        json={"query": "a totally novel complaint about the camera www.example.com/help",
+                              "siis_response": "## Steps\nTap Settings.\nTap Camera."})
+        assert g0_no_urls(_is_envelope(r.text)) == []
+        assert seen == ["a totally novel complaint about the camera"]
+    finally:
+        cold.run = orig
+
+
+def test_rejections_do_not_echo_the_payload(client):
+    """FastAPI's default 422 repeats the input: its links, and all of an oversized article."""
+    for body in ({"query": "https://example.com/help"},                    # nothing left once cleaned
+                 {"query": "see https://example.com/help " + "A" * 5000},  # too long
+                 {"query": "x", "siis_response": "Visit www.example.com. " + "A" * 300_000}):
+        r = client.post("/v1/troubleshoot", json=body)
+        assert r.status_code == 422
+        assert "example.com" not in r.text and len(r.text) < 1000
 
 
 # -------------------------------------------------------------- concurrency

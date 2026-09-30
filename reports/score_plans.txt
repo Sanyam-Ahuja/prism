@@ -1,0 +1,21 @@
+# python scripts/score_plans.py
+# exit=0  elapsed=0.9s
+
+plan                                        step acc   compl  corr order
+--------------------------------------------------------------------------
+Email server not responding on Samsung p     3.00/3    1.00  1.00  1.00
+Blank or black display on a Samsung phon     3.00/3    1.00  1.00  1.00
+Some things to check first                   3.00/3    1.00  1.00  1.00
+Transfer Secure folder with Smart Switch     3.00/3    1.00  1.00  1.00
+Use Multi window and App pairs on your G     2.69/3    0.69  1.00  1.00
+Screen mirroring to your Samsung TV          2.56/3    0.56  1.00  1.00
+Access your Galaxy phone's data if the s     3.00/3    1.00  1.00  1.00
+Screen flickers when using the Camera on     3.00/3    1.00  1.00  1.00
+Cracked or bleeding screen on Galaxy pho     3.00/3    1.00  1.00  1.00
+Screen does not rotate on Galaxy phone o     2.90/3    1.00  1.00  0.90
+Touchscreen issues on a Galaxy phone or      3.00/3    1.00  1.00  1.00
+--------------------------------------------------------------------------
+
+STEP ACCURACY     2.92 / 3.0   (mean over 11 plans)
+DEEPLINK RELEVANCE 1.67 / 2.0   (mean over 9 scored auto actions)
+  sanctioned dummy_positive excluded: 4  (31% of auto actions)

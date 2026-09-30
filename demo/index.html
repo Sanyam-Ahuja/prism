@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting Engine Demo</title>
+<style>
+  :root {
+    --bg: #f5f6fa; --card: #ffffff; --ink: #141a26; --muted: #5d6677; --line: #e2e6ee;
+    --soft: #f0f2f7; --accent: #2e5ae6; --accent-ink: #ffffff;
+    --auto: #0e8a4f; --auto-bg: #e5f5ec; --manual: #a86400; --manual-bg: #fdf1dc;
+    --critical: #c62828; --critical-bg: #fce8e8;
+    --hit: #0e8a4f; --cold: #5b3fd6; --fallback: #6b7485;
+    --shadow: 0 1px 2px rgba(20, 26, 38, .06), 0 4px 16px rgba(20, 26, 38, .06);
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1218; --card: #161b24; --ink: #e7ebf2; --muted: #9aa3b4; --line: #262e3c;
+      --soft: #1c2330; --accent: #7a98ff; --accent-ink: #0e1218;
+      --auto: #52d18f; --auto-bg: #13301f; --manual: #f0b04d; --manual-bg: #33260f;
+      --critical: #ff7a7a; --critical-bg: #3a1718;
+      --hit: #52d18f; --cold: #a996ff; --fallback: #9aa3b4;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1218; --card: #161b24; --ink: #e7ebf2; --muted: #9aa3b4; --line: #262e3c;
+    --soft: #1c2330; --accent: #7a98ff; --accent-ink: #0e1218;
+    --auto: #52d18f; --auto-bg: #13301f; --manual: #f0b04d; --manual-bg: #33260f;
+    --critical: #ff7a7a; --critical-bg: #3a1718;
+    --hit: #52d18f; --cold: #a996ff; --fallback: #9aa3b4;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+           flex-wrap: wrap; padding: 18px 28px; border-bottom: 1px solid var(--line);
+           background: var(--card); }
+  h1 { font-size: 21px; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 14px; }
+  .health { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
+            color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--fallback); flex: none; }
+  .dot.ok { background: var(--hit); } .dot.bad { background: var(--critical); }
+  .pill { background: var(--soft); border: 1px solid var(--line); border-radius: 999px;
+          padding: 2px 10px; white-space: nowrap; }
+  main { display: grid; grid-template-columns: minmax(320px, 440px) 1fr; gap: 24px;
+         padding: 20px 28px; max-width: 1600px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; }
+                              header { padding: 14px 16px; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+          box-shadow: var(--shadow); padding: 20px; }
+  .label { font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em;
+           color: var(--muted); margin: 0 0 8px; }
+  .scenes { display: grid; gap: 6px; margin-bottom: 16px; }
+  .scene { display: flex; gap: 10px; align-items: center; text-align: left; width: 100%;
+           background: var(--soft); border: 1px solid var(--line); border-radius: 10px;
+           padding: 7px 12px; color: var(--ink); font: inherit; cursor: pointer; min-width: 0; }
+  .scene > div:last-child { min-width: 0; }
+  .scene:hover { border-color: var(--accent); }
+  .scene.active { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .scene .n { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid;
+              place-items: center; font-size: 13px; font-weight: 700; background: var(--card);
+              border: 1px solid var(--line); }
+  .scene b { display: block; font-size: 14.5px; }
+  .scene span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.35;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scene.active span { white-space: normal; }
+  textarea, select { width: 100%; font: inherit; color: var(--ink); background: var(--card);
+                     border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  textarea { min-height: 96px; resize: vertical; }
+  textarea:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent);
+                                                       outline-offset: 1px; }
+  .field { margin-bottom: 14px; }
+  details.article { border: 1px solid var(--line); border-radius: 10px; margin-top: 8px;
+                    background: var(--soft); }
+  details.article summary { cursor: pointer; padding: 8px 12px; font-size: 13px;
+                            color: var(--muted); }
+  details.article pre { margin: 0; padding: 0 12px 12px; max-height: 220px; overflow: auto;
+                        white-space: pre-wrap; font: 12.5px/1.45 var(--mono); position: relative; }
+  .planted { background: var(--critical-bg); color: var(--critical); border-radius: 4px; }
+  .go { width: 100%; background: var(--accent); color: var(--accent-ink); border: 0;
+        border-radius: 10px; padding: 12px 16px; font-family: inherit; font-size: 16px;
+        font-weight: 600; line-height: 1.2; cursor: pointer; }
+  .go:disabled { opacity: .6; cursor: wait; }
+  .hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .empty { color: var(--muted); }
+  .empty ol { padding-left: 20px; } .empty li { margin: 6px 0; }
+  .timer { display: flex; flex-direction: column; align-items: center; justify-content: center;
+           min-height: 320px; gap: 6px; }
+  .timer .big { font: 700 54px/1 var(--mono); letter-spacing: -.02em; }
+  .timer .what { color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { background: var(--soft); border: 1px solid var(--line); border-radius: 12px;
+          padding: 10px 12px; min-width: 0; }
+  .tile .k { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+             color: var(--muted); font-weight: 650; }
+  .tile .v { font: 700 22px/1.25 system-ui, sans-serif; overflow-wrap: anywhere; }
+  .tile .s { font-size: 12px; color: var(--muted); }
+  .v.hit { color: var(--hit); } .v.cold { color: var(--cold); } .v.fallback { color: var(--fallback); }
+  .notice { border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 14px;
+            background: var(--soft); border: 1px solid var(--line); }
+  .notice.ok { border-color: var(--hit); } .notice.warn { border-color: var(--manual); }
+  .plan-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;
+               flex-wrap: wrap; margin: 4px 0 6px; }
+  .plan-head h2 { font-size: 20px; margin: 0; line-height: 1.3; }
+  .conf { min-width: 150px; font-size: 12.5px; color: var(--muted); }
+  .bar { height: 7px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .order { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+  .actions { display: grid; gap: 12px; }
+  .action { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+            background: var(--card); }
+  .action .top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .num { width: 26px; height: 26px; border-radius: 50%; background: var(--soft);
+         border: 1px solid var(--line); display: grid; place-items: center; font-weight: 700;
+         font-size: 13px; flex: none; }
+  .action h3 { font-size: 16.5px; margin: 0; flex: 1; min-width: 180px; }
+  .cat { font-size: 12px; font-weight: 650; border-radius: 999px; padding: 2px 10px; }
+  .cat.auto { color: var(--auto); background: var(--auto-bg); }
+  .cat.manual { color: var(--manual); background: var(--manual-bg); }
+  .cat.critical { color: var(--critical); background: var(--critical-bg); }
+  .desc { color: var(--muted); margin: 4px 0 8px 36px; font-size: 14.5px; }
+  .steps { margin: 0 0 10px 36px; padding-left: 18px; }
+  .steps li { margin: 3px 0; }
+  .link { margin-left: 36px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .tap { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px;
+         padding: 7px 14px; font-family: inherit; font-size: 14px; font-weight: 600;
+         line-height: 1.2; cursor: pointer; }
+  .tap.generic { background: var(--soft); color: var(--ink); border: 1px solid var(--line); }
+  .uri { font: 12.5px/1.3 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+  .checks { font-size: 12.5px; color: var(--muted); margin: 8px 0 0 36px; }
+  details.more { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  details.more ul { margin: 8px 0 0; padding-left: 20px; font-size: 14px; }
+  details.more pre { font: 12.5px/1.45 var(--mono); background: var(--soft);
+                     border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+                     max-height: 420px; overflow: auto; white-space: pre-wrap; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+           background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+           font-size: 14px; max-width: min(92vw, 640px); box-shadow: var(--shadow);
+           opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .theme { background: none; border: 1px solid var(--line); border-radius: 8px; color: var(--muted);
+           padding: 3px 9px; cursor: pointer; font: inherit; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Smart Guided Troubleshooting Engine</h1>
+    <div class="sub">A vague complaint in, a validated one-tap troubleshooting plan out</div>
+  </div>
+  <div class="health" id="health"><span class="dot"></span><span>Connecting&hellip;</span></div>
+</header>
+
+<main>
+  <section class="card" aria-label="Request">
+    <p class="label">Demo scenes</p>
+    <div class="scenes" id="scenes"></div>
+
+    <div class="field">
+      <p class="label"><label for="query">Customer complaint</label></p>
+      <textarea id="query" placeholder="Describe the problem in your own words"></textarea>
+    </div>
+    <div class="field">
+      <p class="label"><label for="article">Knowledge-base article (optional)</label></p>
+      <select id="article"></select>
+      <details class="article" id="article-box" hidden>
+        <summary id="article-summary"></summary>
+        <pre id="article-text"></pre>
+      </details>
+    </div>
+    <button class="go" id="go">Build troubleshooting plan</button>
+    <div class="hint">Ctrl + Enter &middot; POST /v1/troubleshoot</div>
+  </section>
+
+  <section class="card" aria-live="polite" id="result">
+    <div class="empty">
+      <p class="label">How it works</p>
+      <ol>
+        <li><b>Semantic cache.</b> Known issues return a pre-validated plan with no model call.</li>
+        <li><b>Live plan.</b> A new issue plus its article goes to a small local model that only
+            <i>selects</i> steps from the article &mdash; it never writes them.</li>
+        <li><b>Deeplinks.</b> Each settings step is matched to a real catalog screen; the model
+            never sees or writes a URI.</li>
+        <li><b>Gates.</b> Every response is schema-checked and scrubbed of web links before it leaves.</li>
+      </ol>
+      <p>Pick a scene on the left to start.</p>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const URL_RE = /(https?:\/\/|www\.)[^\s"'<>)]+/gi;
+const CATEGORY = { auto: "Settings screen", manual: "Hands-on", critical: "Last resort" };
+let articles = {}, scenes = [], active = null, override = null;
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined && text !== null) n.textContent = text;
+  return n;
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+async function loadHealth() {
+  const box = $("health");
+  box.replaceChildren();
+  try {
+    const r = await fetch("/health");
+    const h = await r.json();
+    const ok = r.ok && h.status === "ok";
+    box.append(el("span", "dot " + (ok ? "ok" : "bad")),
+               el("span", null, ok ? "Ready" : "Status: " + h.status),
+               el("span", "pill", h.plans + " cached plans"),
+               el("span", "pill", h.cache_vectors + " cached phrasings"),
+               el("span", "pill", h.catalog_uris + " catalog deeplinks"),
+               el("span", "pill", "Local model: " + (h.extractor || "none")));
+  } catch (e) {
+    box.append(el("span", "dot bad"), el("span", null, "API not reachable"));
+  }
+  const theme = el("button", "theme", "Theme");
+  theme.title = "Toggle light / dark";
+  theme.onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === "dark"
+                                    : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  };
+  box.append(theme);
+}
+
+async function loadPresets() {
+  const p = await (await fetch("/demo/presets")).json();
+  scenes = p.scenarios;
+  const sel = $("article");
+  sel.append(new Option("None — rely on the cache", ""));
+  const groups = {};
+  for (const a of p.articles) {
+    articles[a.id] = a;
+    const g = a.id.startsWith("probe:") ? "Synthetic test articles (not Samsung content)"
+                                        : "Supplied SIIS articles";
+    if (!groups[g]) { groups[g] = document.createElement("optgroup"); groups[g].label = g; }
+    groups[g].append(new Option(a.title, a.id));
+  }
+  for (const g of Object.values(groups)) sel.append(g);
+  const list = $("scenes");
+  scenes.forEach((s, i) => {
+    const b = el("button", "scene");
+    b.type = "button";
+    const text = el("div");
+    text.append(el("b", null, s.label), el("span", null, s.shows));
+    b.append(el("div", "n", String(i + 1)), text);
+    b.onclick = () => pick(i);
+    list.append(b);
+  });
+}
+
+function pick(i) {
+  active = scenes[i];
+  document.querySelectorAll(".scene").forEach((b, j) => b.classList.toggle("active", j === i));
+  $("query").value = active.query;
+  $("article").value = active.article || "";
+  override = active.article_override || null;
+  showArticle();
+}
+
+function currentArticle() {
+  const id = $("article").value;
+  if (!id) return null;
+  return override && active && active.article === id ? override : articles[id];
+}
+
+function showArticle() {
+  const a = currentArticle(), box = $("article-box");
+  box.hidden = !a;
+  if (!a) return;
+  const found = a.content.match(URL_RE) || [], urls = found.length;
+  // The planted URL goes in the one-line summary, which stays visible with the
+  // preview collapsed; the article itself is too long to show on a 1080p screen.
+  const sum = $("article-summary");
+  sum.replaceChildren(document.createTextNode(a.source + " · " + a.content.length + " chars"));
+  if (urls) sum.append(document.createTextNode(" · contains "), el("span", "planted", found[0]),
+                       document.createTextNode(urls > 1 ? " and " + (urls - 1) + " more" : ""));
+  const pre = $("article-text");
+  pre.replaceChildren();
+  // Highlight planted URLs so the leak scene is visible on camera.
+  let last = 0;
+  for (const m of a.content.matchAll(URL_RE)) {
+    pre.append(document.createTextNode(a.content.slice(last, m.index)));
+    pre.append(el("span", "planted", m[0]));
+    last = m.index + m[0].length;
+  }
+  pre.append(document.createTextNode(a.content.slice(last)));
+  box.open = false;
+  // When opened, show the planted URL rather than the top of the article.
+  box.ontoggle = () => {
+    const hit = pre.querySelector(".planted");
+    if (box.open) pre.scrollTop = hit ? Math.max(0, hit.offsetTop - 40) : 0;
+  };
+}
+
+function startTimer() {
+  const box = $("result");
+  box.replaceChildren();
+  const wrap = el("div", "timer"), big = el("div", "big", "0 ms"), what = el("div", "what");
+  wrap.append(big, what);
+  box.append(wrap);
+  const t0 = performance.now();
+  let raf = 0;
+  const tick = () => {
+    const ms = performance.now() - t0;
+    big.textContent = ms < 1000 ? Math.round(ms) + " ms" : (ms / 1000).toFixed(2) + " s";
+    what.textContent = ms < 400 ? "Checking the semantic cache…"
+                                : "No cached plan — building one with the local model…";
+    raf = requestAnimationFrame(tick);
+  };
+  tick();
+  return () => { cancelAnimationFrame(raf); return performance.now() - t0; };
+}
+
+async function run() {
+  const query = $("query").value.trim();
+  if (!query) { $("query").focus(); return; }
+  const a = currentArticle();
+  const body = { query };
+  if (a) body.siis_response = { title: a.title, content: a.content };
+  $("go").disabled = true;
+  const stop = startTimer();
+  let data = null, status = 0;
+  try {
+    const r = await fetch("/v1/troubleshoot", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    status = r.status;
+    data = await r.json();
+  } catch (e) {
+    data = { error: String(e) };
+  }
+  const rtt = stop();
+  $("go").disabled = false;
+  render(data, status, rtt, a);
+}
+
+function tile(k, v, s, cls) {
+  const t = el("div", "tile");
+  t.append(el("div", "k", k), el("div", "v " + (cls || ""), v));
+  if (s) t.append(el("div", "s", s));
+  return t;
+}
+
+function render(d, status, rtt, article) {
+  const box = $("result");
+  box.replaceChildren();
+  if (!d || !d.meta) {
+    box.append(el("div", "notice warn", "Request failed (HTTP " + status + "): " +
+                  JSON.stringify(d && (d.detail || d.error) || d)));
+    return;
+  }
+  const m = d.meta, ctx = (d.response && d.response.contexts) || [];
+  const path = m.cache_hit ? "hit" : (ctx.length ? "cold" : "fallback");
+  const pathName = { hit: "Cache hit", cold: "Live plan", fallback: "Fallback" }[path];
+  const pathSub = { hit: "no model call", cold: m.model || "local model",
+                    fallback: m.fallback || "no plan" }[path];
+  const tok = m.tokens ? (m.tokens.prompt + m.tokens.completion) : 0;
+  const tiles = el("div", "tiles");
+  tiles.append(
+    tile("Path", pathName, pathSub, path),
+    tile("Latency", fmtMs(m.latency_ms), "server · " + fmtMs(rtt) + " round trip"),
+    tile("Tokens", String(tok), m.tokens ? m.tokens.prompt + " in · " + m.tokens.completion + " out" : "none used"),
+    tile("Cost", "$" + Number(m.cost_usd || 0).toFixed(2), "local inference"));
+  box.append(tiles);
+
+  if (active && active.expect && active.expect !== path &&
+      $("query").value.trim() === active.query) {
+    box.append(el("div", "notice warn", "Rehearsal note: this scene expected “" +
+      { hit: "Cache hit", cold: "Live plan", fallback: "Fallback" }[active.expect] +
+      "” but took “" + pathName + "”."));
+  }
+  if (article) {
+    const inN = (article.content.match(URL_RE) || []).length;
+    const outN = (JSON.stringify(d).match(URL_RE) || []).length;
+    if (inN) {
+      box.append(el("div", "notice " + (outN ? "warn" : "ok"),
+        "Leak check: " + inN + " URL" + (inN > 1 ? "s" : "") + " in the article → " +
+        outN + " in the response" + (outN ? "" : " ✓")));
+    }
+  }
+  if (path === "fallback") {
+    const why = m.fallback === "no_siis_context"
+      ? "No cached plan matches this complaint and no article was supplied, so the engine returns an empty plan instead of inventing steps (PDF §4.2.3)."
+      : "No plan could be built and validated from this article, so the engine returns an empty plan rather than an unvalidated one (PDF §4.2.3).";
+    box.append(el("div", "notice", why));
+  }
+  for (const goal of ctx) box.append(renderGoal(goal));
+
+  const variations = d.query_variations || [];
+  if (variations.length) {
+    const more = el("details", "more");
+    more.append(el("summary", null, "Query variations (" + variations.length + ")"));
+    const ul = el("ul");
+    for (const v of variations) ul.append(el("li", null, v));
+    more.append(ul);
+    box.append(more);
+  }
+  const raw = el("details", "more");
+  raw.append(el("summary", null, "Raw JSON response"), el("pre", null, JSON.stringify(d, null, 2)));
+  box.append(raw);
+}
+
+function renderGoal(g) {
+  const frag = document.createDocumentFragment();
+  const head = el("div", "plan-head");
+  const left = el("div");
+  left.append(el("p", "label", g.title), el("h2", null, g.goal));
+  const conf = el("div", "conf", "Confidence " + Math.round(100 * g.score) + "%");
+  const bar = el("div", "bar"), fill = el("i");
+  fill.style.width = Math.round(100 * g.score) + "%";
+  bar.append(fill); conf.append(bar);
+  head.append(left, conf);
+  frag.append(head, el("p", "order", "Ordered least disruptive first: settings screens, then hands-on steps, then last resorts."));
+  const list = el("div", "actions");
+  g.actions.forEach((a, i) => list.append(renderAction(a, i + 1)));
+  frag.append(list);
+  return frag;
+}
+
+function renderAction(a, n) {
+  const card = el("div", "action");
+  const top = el("div", "top");
+  top.append(el("div", "num", String(n)), el("h3", null, a.actionName),
+             el("span", "cat " + a.category, CATEGORY[a.category] || a.category));
+  card.append(top, el("div", "desc", a.description));
+  for (const g of a.stepGroups) {
+    const ol = el("ol", "steps");
+    for (const s of g.steps) ol.append(el("li", null, s));
+    card.append(ol);
+    const dl = g.actionableDeeplink;
+    if (dl) {
+      const generic = dl.deeplink === "bixby://dummy_positive";
+      const row = el("div", "link");
+      const btn = el("button", "tap" + (generic ? " generic" : ""),
+                     (generic ? "Open Settings" : "Open") + " › " + dl.message);
+      btn.type = "button";
+      btn.onclick = () => toast("On a Galaxy device this tap opens: " + dl.description +
+                                " (" + dl.deeplink + ")");
+      row.append(btn, el("span", "uri", generic
+        ? dl.deeplink + " · screen not in the catalog, sanctioned placeholder"
+        : dl.deeplink));
+      card.append(row);
+    }
+    const v = g.validationDeeplink;
+    if (v) card.append(el("div", "checks", "Verifies afterwards: " + v.key +
+      (v.condition ? " " + v.condition + " " + v.value : "")));
+  }
+  return card;
+}
+
+function fmtMs(ms) {
+  if (ms === undefined || ms === null) return "–";
+  return ms < 1000 ? (ms < 10 ? ms.toFixed(1) : Math.round(ms)) + " ms" : (ms / 1000).toFixed(2) + " s";
+}
+
+$("go").onclick = run;
+$("article").onchange = () => { override = null; showArticle(); };
+$("query").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.ctrlKey) run(); });
+document.addEventListener("keydown", (e) => {
+  if (e.altKey && e.key >= "1" && e.key <= "9" && scenes[+e.key - 1]) pick(+e.key - 1);
+});
+
+loadHealth();
+loadPresets().then(() => {
+  const q = new URLSearchParams(location.search);
+  const i = scenes.findIndex((s) => s.id === q.get("scene"));
+  if (i >= 0) { pick(i); if (q.has("run")) run(); }
+});
+</script>
+</body>
+</html>

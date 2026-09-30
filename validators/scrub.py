@@ -35,6 +35,14 @@ def _strip_urls_inline(text: str) -> str:
     return out
 
 
+def _tidy(text: str) -> str:
+    """Close the gaps a removed URL leaves: stray spaces, empty brackets."""
+    out = re.sub(r"\s+([.,;:!?])", r"\1", text)
+    out = re.sub(r"\(\s*\)", "", out)
+    out = re.sub(r"\s{2,}", " ", out)
+    return out.strip()
+
+
 def has_url(text: str) -> bool:
     """True if any prohibited web URL form is present."""
     if not text:
@@ -69,11 +77,19 @@ def scrub(text: str) -> str:
     # Backstop: single-sentence input that was all referral, or a URL the split missed.
     if has_url(out):
         out = _strip_urls_inline(out)
+    return _tidy(out)
 
-    out = re.sub(r"\s+([.,;:!?])", r"\1", out)
-    out = re.sub(r"\(\s*\)", "", out)
-    out = re.sub(r"\s{2,}", " ", out)
-    return out.strip()
+
+def strip_urls(text: str) -> str:
+    """Remove only the URLs from text the user wrote, keeping every other word.
+
+    For the complaint, which the response echoes back: dropping the whole
+    sentence around a link, as scrub() does, would discard the problem
+    description itself. Text without a URL is returned unchanged.
+    """
+    if not has_url(text):
+        return text
+    return _tidy(_strip_urls_inline(text))
 
 
 def scrub_deep(obj):

@@ -11,16 +11,19 @@ would be a straw man:
               id. This is what a competent team would actually build, and is the
               fair comparison against our hybrid retriever.
 """
-import argparse, json, os, re, sys, time
+import argparse, json, os, re, statistics, sys, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import httpx
 
+from engine.cold import MODEL, OLLAMA
 from engine.deeplink import DUMMY, DeeplinkResolver
 from engine.embed import get_encoder
+from scripts.bench import pct
 
-OLLAMA = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-MODEL = os.environ.get("PRISM_EXTRACT_MODEL", "qwen2.5vl:7b")
+# Pooled, as in the cold path: a client per call would charge the Baseline with
+# connection setup the shipped design does not pay.
+_HTTP = httpx.Client(base_url=OLLAMA, timeout=60.0)
 
 GEN_SCHEMA = {"type": "object", "required": ["deeplink"],
               "properties": {"deeplink": {"type": "string"}}}
@@ -29,14 +32,16 @@ SEL_SCHEMA = {"type": "object", "required": ["id"],
 
 
 def ask(prompt, schema, npred=80):
+    """Return (parsed JSON, prompt tokens, completion tokens)."""
     try:
-        r = httpx.post(f"{OLLAMA}/api/generate", timeout=60.0, json={
+        r = _HTTP.post("/api/generate", json={
             "model": MODEL, "prompt": prompt, "format": schema, "stream": False,
             "keep_alive": -1,
             "options": {"temperature": 0, "top_k": 1, "seed": 42, "num_predict": npred}})
-        return json.loads(r.json()["response"])
+        j = r.json()
+        return json.loads(j["response"]), j.get("prompt_eval_count", 0), j.get("eval_count", 0)
     except Exception:
-        return {}
+        return {}, 0, 0
 
 
 def main():
@@ -55,12 +60,17 @@ def main():
     examples = "\n".join(f'  {e["deeplink"]}  = {e["description"][:60]}'
                          for e in r.entries[:4])
 
+    # First-call overhead off the clock, as in eval_deeplinks.py.
+    r.candidates("warm up the encoder", k=a.k)
+    ask("Return JSON.", GEN_SCHEMA if a.mode == "generate" else SEL_SCHEMA)
+
     valid = correct = 0
-    t0 = time.perf_counter()
+    lat, p_tok, c_tok = [], [], []
     for L in labels:
         d = L["descriptor"]
+        t0 = time.perf_counter()
         if a.mode == "generate":
-            out = ask(f"""Samsung Settings deeplink catalog uses masked URIs, for example:
+            out, pt, ct = ask(f"""Samsung Settings deeplink catalog uses masked URIs, for example:
 {examples}
 
 Return the bixby:// deeplink for this Settings screen: "{d}"
@@ -70,7 +80,7 @@ Return JSON only.""", GEN_SCHEMA)
         else:
             cands = r.candidates(d, k=a.k)
             listing = "\n".join(f'  {e["id"]}: {e["description"][:70]}' for e, _ in cands)
-            out = ask(f"""Pick the catalog entry describing this Settings screen: "{d}"
+            out, pt, ct = ask(f"""Pick the catalog entry describing this Settings screen: "{d}"
 
 {listing}
   NONE: no entry matches
@@ -78,6 +88,8 @@ Return JSON only.""", GEN_SCHEMA)
 Return JSON with the chosen id.""", SEL_SCHEMA)
             got_id = (out or {}).get("id", "").strip()
             uri = by_id.get(got_id, {}).get("deeplink", DUMMY if got_id == "NONE" else "")
+        lat.append((time.perf_counter() - t0) * 1000)
+        p_tok.append(pt); c_tok.append(ct)
 
         valid += uri in catalog
         expect = L["expect"]
@@ -85,11 +97,13 @@ Return JSON with the chosen id.""", SEL_SCHEMA)
         correct += got == expect
 
     n = len(labels)
-    el = time.perf_counter() - t0
     print(f"\nBaseline / {a.mode}   model={MODEL}  n={n}")
     print(f"  catalog integrity (URI in catalog) : {valid}/{n} = {valid/n:.1%}")
     print(f"  precision@1 vs labels              : {correct}/{n} = {correct/n:.1%}")
-    print(f"  mean latency                       : {el/n*1000:.0f} ms/descriptor")
+    print(f"  mean latency                       : {statistics.mean(lat):.0f} ms/descriptor")
+    print(f"  P50 / P95 latency                  : {pct(lat, 50):.0f} / {pct(lat, 95):.0f} ms/descriptor")
+    print(f"  tokens per descriptor (mean)       : {statistics.mean(p_tok):.0f} prompt"
+          f" + {statistics.mean(c_tok):.0f} completion")
     return 0
 
 

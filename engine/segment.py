@@ -131,7 +131,7 @@ def is_actionable(sentence: str) -> bool:
         if len(parts) < 2:
             return False
         core = _strip_lead(parts[1])
-    first = re.split(r"[\s,]", core, 1)[0].lower().strip(".:;")
+    first = re.split(r"[\s,]", core, maxsplit=1)[0].lower().strip(".:;")
     return first in _IMPERATIVE_VERBS
 
 

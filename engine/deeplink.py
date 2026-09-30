@@ -152,7 +152,24 @@ class DeeplinkResolver:
             idx.append(i)
         return idx
 
-    def _rank(self, descriptor: str, allow_appliance: bool):
+    def encode_queries(self, descriptors: list[str]) -> dict:
+        """Batch-encode descriptors once, for resolve(..., qv=...).
+
+        One batched encode for a whole plan's probes is ~6x cheaper on CPU than
+        one encode per probe (18 probes: 212 ms vs ~1.2 s, measured), and the
+        cold path resolves up to three probes per action.
+        """
+        if self._dense is None:
+            return {}
+        uniq = list(dict.fromkeys(d for d in descriptors if (d or "").strip()))
+        if not uniq:
+            return {}
+        from engine.embed import QUERY_PREFIX
+        vecs = self.encoder.encode([QUERY_PREFIX + d for d in uniq],
+                                   normalize_embeddings=True)
+        return dict(zip(uniq, vecs))
+
+    def _rank(self, descriptor: str, allow_appliance: bool, qv=None):
         """Shared ranking pass. Returns (ordered_indices, sims, want) or None."""
         cand = self._candidate_mask(descriptor, allow_appliance)
         if not cand:
@@ -170,9 +187,10 @@ class DeeplinkResolver:
 
         sims = None
         if self._dense is not None:
-            from engine.embed import QUERY_PREFIX
-            qv = self.encoder.encode([QUERY_PREFIX + descriptor],
-                                     normalize_embeddings=True)[0]
+            if qv is None:
+                from engine.embed import QUERY_PREFIX
+                qv = self.encoder.encode([QUERY_PREFIX + descriptor],
+                                         normalize_embeddings=True)[0]
             sims = self._dense @ qv
             for r, i in enumerate(sorted(cand, key=lambda i: -sims[i])):
                 ranks[i] = ranks.get(i, 0.0) + 1.0 / (K + r + 1)
@@ -192,8 +210,9 @@ class DeeplinkResolver:
         """Top-k (entry, confidence), best first.
 
         Exposed for rerankers: our retrieval puts the correct entry in the top 5
-        for 87% of free-form descriptors but ranks it first only 53% of the time,
-        so a second-stage reranker has real headroom to work with.
+        for 93% of free-form descriptors but ranks it first only 67% of the time
+        (reports/dl_paraphrase_hybrid.txt), so a second-stage reranker has real
+        headroom to work with.
         """
         if not (descriptor or "").strip():
             return []
@@ -205,7 +224,8 @@ class DeeplinkResolver:
                 for i in order[:k]]
 
     def resolve(self, descriptor: str, tau: float = 0.52,
-                allow_appliance: bool = False, debug: bool = False) -> Match:
+                allow_appliance: bool = False, debug: bool = False,
+                qv=None) -> Match:
         """Resolve a screen descriptor to a catalog entry, or fall back to dummy.
 
         Ranking and confidence are deliberately separate. RRF is rank-derived, so
@@ -216,7 +236,7 @@ class DeeplinkResolver:
         if not (descriptor or "").strip():
             return Match(None, 0.0, True, "empty descriptor")
 
-        r = self._rank(descriptor, allow_appliance)
+        r = self._rank(descriptor, allow_appliance, qv)
         if r is None:
             return Match(self.dummy, 0.0, True, "no candidate after filtering")
         order, sims, want = r

@@ -15,11 +15,13 @@ import uuid
 from typing import Any, Optional
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from engine.cache import TAU_HIT, PlanCache
 from validators.gates import Ctx, blocking, load_ctx, validate_envelope
+from validators.scrub import strip_urls
 
 log = logging.getLogger("prism")
 logging.basicConfig(
@@ -74,6 +76,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Smart Guided Troubleshooting Engine", version="1.0",
               lifespan=lifespan)
 
+# Recording aid only (docs/DEMO.md). Off by default so the graded surface is
+# exactly the two endpoints of PDF section 5.
+if os.environ.get("PRISM_DEMO", "0") not in ("0", "false", "False", ""):
+    from api.demo import router as demo_router
+    app.include_router(demo_router)
+
 
 class TroubleshootRequest(BaseModel):
     # Caps keep a hostile or malformed payload from blowing the segmenter and
@@ -81,6 +89,17 @@ class TroubleshootRequest(BaseModel):
     query: str = Field(min_length=1, max_length=1024)
     # PDF 5 types this as a raw string; objects are accepted as a superset.
     siis_response: Optional[Any] = Field(default=None)
+
+    @field_validator("query")
+    @classmethod
+    def _strip_links(cls, v):
+        # The complaint is echoed in the response and seeds both the cache lookup
+        # and the cold path's paraphrases, so a link typed into it would come
+        # straight back out (PDF 4.2.1). Only the link goes; the complaint stays.
+        v = strip_urls(v)
+        if not v.strip():
+            raise ValueError("query has no text once links are removed")
+        return v
 
     @field_validator("siis_response")
     @classmethod
@@ -120,6 +139,20 @@ async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         _envelope("", [], [], time.perf_counter(), False, None, 0.0, FALLBACK_NO_MATCH),
         status_code=200,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def _invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 without FastAPI's default echo of the rejected input.
+
+    That echo would return any URL in the payload (PDF 4.2.1), and all of an
+    oversized siis_response.
+    """
+    return JSONResponse(
+        {"detail": [{"type": e.get("type"), "loc": list(e.get("loc", ())), "msg": e.get("msg")}
+                    for e in exc.errors()]},
+        status_code=422,
     )
 
 

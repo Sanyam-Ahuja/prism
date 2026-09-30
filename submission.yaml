@@ -13,5 +13,5 @@ requirements:
 env: []                              # no hosted API keys: runtime inference is local
 models:
   build_tier: "Claude Opus 5 (one-time offline plan compilation)"
-  runtime_extractor: "ollama/gemma3:4b (override with PRISM_EXTRACT_MODEL)"
+  runtime_extractor: "ollama/qwen2.5:1.5b (override with PRISM_EXTRACT_MODEL; see ADR-017)"
   embeddings: "BAAI/bge-small-en-v1.5"

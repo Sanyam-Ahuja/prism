@@ -1,0 +1,9 @@
+# One-off verification, 2026-09-30, final code (python scripts/verify_cold_path.py breakdown).
+# Startup: get_encoder(), PlanCache(), ColdPath(encoder) timed in sequence in a fresh process.
+# Steps: scripts/score_plans.step_accuracy() components, compiled plan vs a cold-path plan
+#        (qwen2.5:1.5b, fresh model load) for each of the 11 documents.
+
+STARTUP  encoder load  23.2s | plan cache  0.1s | ColdPath (embeds 578 catalog entries)   7.1s | total  30.3s
+compiled step accuracy 2.92 = completeness 0.93 + correctness 1.00 + ordering 0.99
+cold     step accuracy 2.97 = completeness 0.99 + correctness 1.00 + ordering 0.97
+documents reaching the 500-token output cap: 2/11 ['Use Multi window and App pairs on your G', 'Screen mirroring to your Samsung TV']

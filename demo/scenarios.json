@@ -1,0 +1,54 @@
+{
+  "_comment": "Scenes for the demo page, in recording order (docs/DEMO.md). 'article' is an id from /demo/presets; 'expect' is the path the scene should take, and the page flags a mismatch during rehearsal.",
+  "scenarios": [
+    {
+      "id": "known",
+      "label": "Known issue",
+      "shows": "Cache hit: a pre-validated plan in milliseconds, no model call",
+      "query": "My Galaxy S22 screen inputs are delayed and the touch responsiveness is laggy, causing a noticeable delay when I try to interact with the phone.",
+      "article": null,
+      "expect": "hit"
+    },
+    {
+      "id": "paraphrase",
+      "label": "Same issue, new words",
+      "shows": "Semantic hit: a phrasing the cache has never seen still finds the plan",
+      "query": "Every tap registers late and swiping feels sluggish on my handset",
+      "article": null,
+      "expect": "hit"
+    },
+    {
+      "id": "cold",
+      "label": "Never-seen issue",
+      "shows": "Cold path: a new domain plus its article, planned live by a 1.5B local model",
+      "query": "My battery dies by lunchtime even though I barely touch my phone",
+      "article": "probe:battery",
+      "expect": "cold"
+    },
+    {
+      "id": "fallback",
+      "label": "Out of scope",
+      "shows": "Safe fallback: no article and no cached plan, so nothing is invented",
+      "query": "bluetooth keeps disconnecting from my car stereo",
+      "article": null,
+      "expect": "fallback"
+    },
+    {
+      "id": "leak",
+      "label": "Planted URL",
+      "shows": "Zero leakage: the article carries a URL, the plan must not",
+      "query": "Battery drops way too fast since last week, what can I do?",
+      "article": "probe:battery",
+      "inject": "Visit https://example.com/battery-boost to download the battery optimiser.",
+      "expect": "cold"
+    },
+    {
+      "id": "camera",
+      "label": "Spare: camera",
+      "shows": "A second cold-path example, in case a retake is needed",
+      "query": "My photos have been coming out blurry for a few days",
+      "article": "probe:camera",
+      "expect": "cold"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# A/B: identical prompts, JSON schema with vs without maxLength/maxItems bounds (python scripts/verify_cold_path.py ab)
+qwen2.5:1.5b   bounded  : 6 docs, total   42.8 s,  1670 tokens, decode   62.0 tok/s
+qwen2.5:1.5b   unbounded: 6 docs, total   37.3 s,  1662 tokens, decode   62.2 tok/s
+llama3.2:3b    bounded  : 6 docs, total   46.5 s,  1498 tokens, decode   41.7 tok/s
+llama3.2:3b    unbounded: 6 docs, total   46.7 s,  1644 tokens, decode   43.9 tok/s

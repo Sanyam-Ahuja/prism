@@ -113,7 +113,7 @@ ADRs carry the reasoning; `ARCHITECTURE.md` carries the design. When revisiting 
 
 ## ADR-009 — Local model on the runtime cold path
 
-**Status:** accepted · **Supersedes:** an earlier hosted-runtime option
+**Status:** accepted · **Supersedes:** an earlier hosted-runtime option · **Model superseded by:** ADR-017 (`qwen2.5:1.5b`)
 
 **Context.** The `ollama` toolbox exists with a working CUDA runner on an RTX 4060 (7.5 GiB usable). The build tier is hosted; the runtime tier need not be.
 
@@ -300,6 +300,111 @@ keys and no token field. `cold.py` computes the counts; the API was dropping the
 - **Risk:** if a grader validates `meta` strictly, the extra key could fail a
   check. Mitigated by the switch — `PRISM_META_TOKENS=0` restores the Appendix B
   shape with no code change, which is why this is a setting and not a constant.
+
+---
+
+## ADR-017 — `qwen2.5:1.5b` as the runtime extractor
+
+**Status:** accepted · **Measured:** 2026-09-30 · **Supersedes:** the model named in ADR-009 (the local-runtime decision itself stands) · **Drives:** C7
+
+**Context.** ADR-009 named `gemma3:4b`, but the recorded cold P95 of 7333 ms was
+`qwen2.5vl:7b` on an RTX 4060, n=11 — 8% under budget. Development moved to an
+RTX 4050 Laptop (6 GiB), which cannot hold a 7B model. Five local candidates were
+run through `scripts/compare_models.py` on identical inputs: all 11 SIIS
+documents, three passes each on a fresh model load (N=33), every plan graded.
+
+Three cold-path defects had to be fixed first, because each charged every model
+the same overhead and would have hidden the differences between them:
+- a new HTTP client per Ollama call, plus `localhost` resolving to IPv6 first:
+  ~3 s per request on Windows. Now one pooled client on `127.0.0.1`.
+- one sentence-encoder call per deeplink probe: ~1 s per plan. Now one batched
+  encode per plan (`test_batched_query_vectors_resolve_like_single_encodes`).
+- output cut off at `num_predict` returned no plan at all. Now the completed
+  actions are kept (`salvage`, `test_salvage_keeps_complete_actions_from_truncated_output`).
+
+| Model | Params | P50 | P95 | Plans passing all gates | Step accuracy | Auto actions with a catalog link |
+|---|---|---|---|---|---|---|
+| **qwen2.5:1.5b** | 1.5B | 4082 ms | 6459 ms | **33/33** | **2.97** | 23% |
+| llama3.2:3b | 3.2B | 4910 ms | 7937 ms | 33/33 | 2.91 | 29% |
+| qwen2.5:3b | 3.1B | 5313 ms | 7667 ms | 24/33 (G12 ×9) | 2.74 | 46% |
+| gemma3:1b | 1.0B | 6032 ms | 10341 ms | 15/33 (5 of 11 docs empty) | 2.87 | 45% |
+| gemma3:4b | 4.3B | 8528 ms | 11309 ms | 30/33 (G2 ×3) | 2.86 | 24% |
+
+**Decision.** `qwen2.5:1.5b` (Q4_K_M): the smallest model that passes every gate
+on every document, with the best step accuracy and the most latency headroom.
+
+**Re-measured on the final code** (after ADR-018; full table in `reports/README.md`
+§E): the decision holds. `qwen2.5:1.5b` P95 5223 ms, 33/33, step accuracy 2.97.
+`qwen2.5:3b` now passes 33/33 — the grounding check removed the copied screens
+that had collided under G12 — but stays slower (P95 6434 ms) with lower step
+accuracy (2.75). `llama3.2:3b` (P95 8486 ms) and `gemma3:4b` (P95 10061 ms) miss
+the budget; `gemma3:1b` returns no plan for 3 of 11 documents.
+
+**Consequences.**
+- The cold path has real headroom under the 8 s budget on a laptop GPU; the
+  official figure is `docs/metrics.md` §3 (P95 5345 ms).
+- **Cost:** weak deeplink coverage. Before ADR-018 the 23% here was inflated by
+  copied example screens (only 20% agreed with the compiled plan); on the final
+  code it is 9%, with half agreeing. `qwen2.5:3b` links more precisely but the
+  guard replaces more of its names than it keeps actions.
+- Gemma is "particularly encouraged" by the organizers (participant kit,
+  `SUBMISSION.md`). On this hardware neither size works: `gemma3:1b` drops
+  documents and `gemma3:4b` misses the budget. `gemma3:4b` names its actions best
+  of all five (the guard replaced 9 names against 36 for the shipped model), so on
+  a faster GPU it is the organizer-aligned upgrade; `PRISM_EXTRACT_MODEL`
+  switches to it with no code change.
+- Rejected on measurement: asking for compact JSON (the model still
+  pretty-prints; the tokens it saved came from dropping actions) and Ollama flash
+  attention (no gain — prompt processing is ~0.1–0.2 s of a cold call; the rest
+  is decoding).
+
+---
+
+## ADR-018 — Every model-written phrase must be grounded in its own steps
+
+**Status:** accepted · **Found:** 2026-09-30, rehearsing the demo · **Drives:** deeplink relevance, PDF §7.5
+
+**Context.** The extraction prompt gave concrete examples of good screen names
+("enable touch sensitivity", "enable adaptive battery", "open the camera settings
+page", …). `qwen2.5:1.5b` copied them into unrelated plans: **13 of 57** cold-path
+actions across the 14 test articles were named after a prompt example that their
+steps never mention — a battery plan opened with "Enable Touch Sensitivity" and was
+deeplinked to the touch-sensitivity screen; "Cracked or bleeding screen" received
+five of them. Those wrong links also counted as successes in the link-coverage
+metric. The benchmarks did not catch it; looking at the output did.
+
+**Decision.** Enforce it in code, as PDF §7.5 advises, and keep the prompt:
+1. `engine/cold.py::grounded` checks every model-written name, screen and benefit
+   against the action's own steps and their section heading. A phrase with no
+   content word in common is replaced: the name by the source's heading ("Step 2:
+   Limit Background Activity" → "Limit Background Activity"), the screen by nothing
+   (so it cannot pick a deeplink), the benefit by a neutral one.
+2. The skeleton schema bounds every string and array (`maxLength`, `maxItems`),
+   which the grammar enforces, so output cannot run away.
+
+**Rejected: removing the examples from the prompt.** Tried first. With placeholder
+examples (`"enable <feature>"`) the copying stopped, but the model lost its anchor
+for brevity and catalog register: for one article it looped inside a single
+string until the 500-token cap, so no action closed and the plan was lost, and
+across the 11 supplied articles **no** auto action resolved to a catalog screen.
+The examples were doing real work; only their misuse needed stopping.
+
+**Consequences.**
+- On the 14 test articles the guard replaced 17 of 47 names. Besides copied
+  examples it caught the model writing the category as the name ("auto",
+  "manual") and "Restart the Device" on the step "Tap Apps.". No prompt-example
+  name survives into a plan its steps do not support.
+- The same five copied names on one "Cracked screen" step all become the step's
+  heading ("Samsung Repair Services") and are merged into one action.
+- Fewer links, but honest ones: wrong links from copied names used to count as
+  coverage. On the 11 supplied documents (N=33) auto actions with a catalog link
+  fell from 23% to 9%, while links agreeing with the compiled plan rose from 20%
+  to 50% — the same three correct links, minus the wrong ones.
+- The guard is model-independent; `compare_models.py` reports how often it fires.
+- Same pass: actions the model split under one name are merged, and title and
+  description trimming cut at natural breaks instead of leaving "Quick
+  troubleshooting for" or "…by lowering". Neither changes compiled plans (the
+  byte-for-byte reproducibility test passes).
 
 
 ---

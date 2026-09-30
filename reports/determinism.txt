@@ -1,0 +1,21 @@
+# python scripts/determinism_probe.py
+# PRISM_EXTRACT_MODEL=qwen2.5:1.5b
+# exit=0  elapsed=105.1s
+
+model=qwen2.5:1.5b
+document                                        fresh cache-warm
+Email server not responding on Samsung p   01e954e62d 01e954e62d
+Blank or black display on a Samsung phon   9b6c412dea a706068ccb   DIFFERS
+Some things to check first                 26edda6c1c 26edda6c1c
+Transfer Secure folder with Smart Switch   0ac7bab508 0ac7bab508
+Use Multi window and App pairs on your G   c15fba3f55 b6069969ba   DIFFERS
+Screen mirroring to your Samsung TV        c8ccac1ddc c8ccac1ddc
+Access your Galaxy phone's data if the s   ad9088449a ad9088449a
+Screen flickers when using the Camera on   79ace3c26e 79ace3c26e
+Cracked or bleeding screen on Galaxy pho   4393d5a718 afce5351f5   DIFFERS
+Screen does not rotate on Galaxy phone o   f98b2ad27f f98b2ad27f
+Touchscreen issues on a Galaxy phone or    a5e427be70 6b5359cb32   DIFFERS
+
+fresh vs cache-warm : 7/11 documents identical
+back-to-back        : 1 distinct of 4  (Blank or black display on a Samsung phon)
+interleaved         : 1 distinct of 5  (after 5 different documents)
