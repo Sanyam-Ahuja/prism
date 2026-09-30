@@ -21,7 +21,7 @@ carries a deeplink that opens the right Settings screen in one tap.
 |---|---|
 | Source Code | This repository: [`api/`](api/), [`engine/`](engine/), [`validators/`](validators/), [`scripts/`](scripts/), [`tests/`](tests/); dependencies in [`requirements.txt`](requirements.txt) (exact pins in [`requirements.lock`](requirements.lock)) |
 | Presentation | [`presentation/Smart_Guided_Troubleshooting_Engine.pptx`](presentation/Smart_Guided_Troubleshooting_Engine.pptx) · [PDF copy](presentation/Smart_Guided_Troubleshooting_Engine.pdf) |
-| Video | Demo video: **link to be added** (YouTube or Drive). Recording runbook: [`docs/DEMO.md`](docs/DEMO.md) |
+| Video | [`presentation/Smart_Guided_Troubleshooting_Engine_demo.mp4`](presentation/Smart_Guided_Troubleshooting_Engine_demo.mp4): 2.5 min, 1080p, captioned screen recording of the real system running locally. Recording runbook for a narrated take: [`docs/DEMO.md`](docs/DEMO.md) |
 | AI Disclosure | [`AI_DISCLOSURE.md`](AI_DISCLOSURE.md) |
 | README | This file |
 | APK/SDK (if any) | Not applicable. The deliverable is a REST API (`POST /v1/troubleshoot`, `GET /health`); there is no APK or SDK. |
@@ -250,7 +250,7 @@ artifacts/          generated: plan library; cache, catalog and out-of-scope vec
 data/               supplied inputs: 11 support articles, 578-entry deeplink catalog, 20 queries
 reports/            raw output behind every figure in docs/metrics.md
 docs/               design, decisions, metrics, demo runbook
-presentation/       the presentation (.pptx and a PDF copy)
+presentation/       the presentation (.pptx and a PDF copy) and the demo video
 AI_DISCLOSURE.md    where AI is used, in the product and in building it
 Theme02_Input_Kit/  the Theme 02 input kit, as supplied
 participant-kit/    Theme 05's participant kit, kept as a reference for submission conventions
