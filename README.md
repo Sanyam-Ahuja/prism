@@ -9,7 +9,7 @@ carries a deeplink that opens the right Settings screen in one tap.
 
 - **Known problems** come back from a semantic cache in milliseconds, with no model call.
 - **New problems** are planned live from the supplied support article by a
-  1.5-billion-parameter model running locally, in about 5 seconds.
+  1.5-billion-parameter model running locally, in 3 to 5 seconds.
 - **Every response** is schema-valid JSON with no web URLs. Every deeplink in it is
   copied from the provided catalog.
 
@@ -39,16 +39,24 @@ output behind each figure is in [`reports/`](reports/README.md).
 ```mermaid
 flowchart TD
     Q["Complaint<br/>+ optional support article"] --> A{"Article<br/>supplied?"}
-    A -->|no| S["Split into problems,<br/>match each to a cached plan"]
-    S -->|hit| P["Validated plan (JSON)"]
-    S -->|no match, or out of scope| F["Empty plan<br/>fallback: no_siis_context"]
+    A -->|no| S["Split into problems,<br/>match each to<br/>a cached plan"]
+    S -->|match| H["One cached plan<br/>per problem"]
+    S -->|no match| F["Empty plan<br/>fallback: no_siis_context"]
     A -->|yes| K{"Article<br/>seen before?"}
-    K -->|yes| P
-    K -->|no| L["Local model picks step numbers<br/>from the article"]
-    L --> R["Retriever links each settings screen<br/>to a catalog deeplink"]
-    R --> G["Gates G0–G16: schema, no URLs,<br/>catalog URIs, ordering"]
-    G --> P
+    K -->|yes| M["Its stored plan,<br/>no model call"]
+    K -->|no| L["Local model picks step<br/>numbers from the article"]
+    L --> R["Retriever links each<br/>settings screen to<br/>a catalog deeplink"]
+    R --> G{"Gates G0–G16<br/>pass?"}
+    G -->|yes| V["Live plan, 3–5 s"]
+    G -->|no| N["Empty plan<br/>fallback: no_match"]
 ```
+
+Complaints about topics no plan covers, such as battery or connectivity, are
+recognised as out of scope. They get the `no_siis_context` fallback instead of the
+nearest display plan; 37 of 38 did in a held-out test. An article counts as seen
+before if it is one of the supplied articles, as sent or reformatted, or if this
+server has already planned it. Either way its stored plan comes back with no model
+call.
 
 The cached plans come from the same pipeline, run once per supplied article at
 build time with a stronger hosted model (Claude Opus 5). Its output is captured in
@@ -208,7 +216,7 @@ The main ones:
   placeholder, `bixby://dummy_positive`.
 - **A second problem that no plan covers is dropped without notice** when one
   complaint names two problems.
-- **A request with a new article always takes the live path** (about 5 s), even
+- **A request with a new article always takes the live path** (3–5 s), even
   when its complaint matches a cached plan, because the plan must come from the
   text that was sent.
 - **All figures come from one shared Windows laptop**, where latency varies by
