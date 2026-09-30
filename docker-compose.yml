@@ -1,0 +1,43 @@
+# Smart Guided Troubleshooting Engine - the API plus a local Ollama with the
+# extractor model, from a fresh clone:
+#
+#   docker compose up --build            # CPU
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build   # NVIDIA GPU
+#
+# Then: http://127.0.0.1:8000/health and POST http://127.0.0.1:8000/v1/troubleshoot
+# The first run downloads the Python packages, the encoder and qwen2.5:1.5b (~1 GB).
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"          # keep the model resident between requests
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  model:                               # one-shot: pull the extractor, then exit
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "qwen2.5:1.5b"]
+    restart: "no"
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      model:
+        condition: service_completed_successfully
+
+volumes:
+  ollama: {}

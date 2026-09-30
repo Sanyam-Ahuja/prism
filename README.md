@@ -1,13 +1,22 @@
 # Smart Guided Troubleshooting Engine
 
-**Samsung PRISM GenAI Hackathon 3.0 · Theme 02**
+**Samsung PRISM GenAI Hackathon 3.0 · Theme 02 · Team DeadlockDodgers (Thapar)**
 
-A Galaxy user describes a problem in their own words, such as *"every tap takes ages
-to register"*. The engine answers with a troubleshooting plan: ordered actions built
-from the support article's own steps, least disruptive first. Each settings step
-carries a deeplink that opens the right Settings screen in one tap.
+| Team DeadlockDodgers · Thapar | |
+|---|---|
+| Vyom Khanna | vkhanna_be25@thapar.edu |
+| Sanyam Ahuja | sahuja2_be25@thapar.edu |
+| Shauryajit Singh | ssingh4_be25@thapar.edu |
+| Parin Gupta | pgupta_be25@thapar.edu |
+
+A Galaxy user types a problem the way people actually type, such as *"tapping takes
+forever to register"* or *"dropped it and screen cracked. also touch is slow af"*. The
+engine answers with a troubleshooting plan: ordered actions built from the support
+article's own steps, least disruptive first. Each settings step carries a deeplink
+that opens the right Settings screen in one tap.
 
 - **Known problems** come back from a semantic cache in milliseconds, with no model call.
+  Matching is by meaning, so casual, short or misspelled wording finds the same plan.
 - **New problems** are planned live from the supplied support article by a
   1.5-billion-parameter model running locally, in under 5 seconds (median 2.6 s).
 - **Every response** is schema-valid JSON with no web URLs. Every deeplink in it is
@@ -17,15 +26,19 @@ carries a deeplink that opens the right Settings screen in one tap.
 
 ## Submission checklist
 
+Everything below is in the commit tagged `PRISM_GENAI_HACKATHON_Y2026`.
+
 | Item | Where |
 |---|---|
-| Source Code | This repository: [`api/`](api/), [`engine/`](engine/), [`validators/`](validators/), [`scripts/`](scripts/), [`tests/`](tests/); dependencies in [`requirements.txt`](requirements.txt), also as [`requirement.txt`](requirement.txt) to match the form (exact pins in [`requirements.lock`](requirements.lock)) |
-| Presentation | [`presentation/Smart_Guided_Troubleshooting_Engine.pptx`](presentation/Smart_Guided_Troubleshooting_Engine.pptx) · [PDF copy](presentation/Smart_Guided_Troubleshooting_Engine.pdf) |
-| Video | [`presentation/Smart_Guided_Troubleshooting_Engine_demo.mp4`](presentation/Smart_Guided_Troubleshooting_Engine_demo.mp4): 2.5 min, 1080p, captioned screen recording of the real system running locally. Recording runbook for a narrated take: [`docs/DEMO.md`](docs/DEMO.md) |
+| Source Code | This repository: [`api/`](api/), [`engine/`](engine/), [`validators/`](validators/), [`scripts/`](scripts/), [`tests/`](tests/) |
+| Requirements | [`requirements.txt`](requirements.txt), also as [`requirement.txt`](requirement.txt); exact pins in [`requirements.lock`](requirements.lock) |
+| Docker files | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml) (API + Ollama + model), [`docker-compose.gpu.yml`](docker-compose.gpu.yml) (NVIDIA GPU) |
+| Presentation | [`Thapar_DeadlockDodgers_Submission.pptx`](Thapar_DeadlockDodgers_Submission.pptx) · [PDF copy](Thapar_DeadlockDodgers_Submission.pdf), on the organisers' template |
+| Video | [`Thapar_DeadlockDodgers_Demo.mp4`](Thapar_DeadlockDodgers_Demo.mp4): captioned screen recording of the real system running locally, under 5 minutes |
 | AI Disclosure | [`AI_DISCLOSURE.md`](AI_DISCLOSURE.md) |
-| README | This file |
+| README | This file: [setup](#quickstart), [Docker](#docker), [results](#results) |
 | APK/SDK (if any) | Not applicable. The deliverable is a REST API (`POST /v1/troubleshoot`, `GET /health`); there is no APK or SDK. |
-| TAG | `PRISM_GENAI_HACKATHON_Y2026` |
+| TAG | `PRISM_GENAI_HACKATHON_Y2026` on the final commit |
 
 ## Results
 
@@ -93,6 +106,36 @@ evidence.
 
 ## Quickstart
 
+Two ways to run it from a fresh clone. Both serve the API on
+<http://127.0.0.1:8000>.
+
+### Docker
+
+Needs only Docker (Docker Desktop on Windows or macOS). One command builds the API
+image, starts Ollama and pulls the `qwen2.5:1.5b` model (about 1 GB, first run only):
+
+```bash
+git clone https://github.com/Sanyam-Ahuja/prism && cd prism
+docker compose up --build                                                  # CPU
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build  # NVIDIA GPU
+```
+
+Then try it:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl -X POST http://127.0.0.1:8000/v1/troubleshoot -H "Content-Type: application/json" \
+     -d '{"query": "tapping takes forever to register"}'
+```
+
+The image bakes in the encoder weights at build time, so the running container needs
+no network. The API image also runs on its own:
+`docker build -t prism-engine . && docker run --rm -p 8000:8000 -e OLLAMA_HOST=http://host.docker.internal:11434 prism-engine`
+uses an Ollama already running on the host. Without Ollama, cached plans still work
+and live plans return the `no_match` fallback.
+
+### Local Python
+
 You need Python 3.12 or later. Live plans also need [Ollama](https://ollama.com)
 with the extractor model; the cache path needs no model server.
 
@@ -125,21 +168,9 @@ This command:
 4. warms every path
 5. opens <http://127.0.0.1:8000/demo>
 
-The page has seven scenes: `Alt+1` … `Alt+7` picks one and `Ctrl+Enter` runs it.
+The page has eight scenes, all typed the way people really type: `Alt+1` … `Alt+8` picks one and `Ctrl+Enter` runs it.
 The recording runbook is [`docs/DEMO.md`](docs/DEMO.md). The page is only mounted
 when `PRISM_DEMO=1`, so the graded API stays exactly the two endpoints below.
-
-### Container
-
-```bash
-python scripts/vendor_models.py      # copy the encoder into vendor/ (needs network once)
-podman build -t prism-engine .       # or docker
-podman run --rm -p 8000:8000 prism-engine
-```
-
-The image runs offline. For live plans, set `OLLAMA_HOST` to the URL of an Ollama
-server the container can reach. On Linux, `--network host` lets it use the host's
-Ollama.
 
 ## API
 
@@ -228,6 +259,13 @@ The main ones:
   placeholder, `bixby://dummy_positive`.
 - **A second problem that no plan covers is dropped without notice** when one
   complaint names two problems.
+- **Two problems are found reliably only across a clear break** such as a full stop or
+  ", and". In our spot checks *"dropped it and screen cracked. also touch is slow af"*
+  got both plans, while *"screen cracked and also touch is really slow"* and *"dropped my
+  phone screen cracked and now touch is super slow"* got the fallback.
+- **Very vague or unusual wording can miss.** *"my phone is being weird"* gets the
+  fallback (there is nothing to act on), and in our spot checks *"screen doesnt rotate
+  when i turn the phone"* matched the blank-screen plan.
 - **A request with a new article always takes the live path** (2.6 s median, 4.4 s P95), even
   when its complaint matches a cached plan, because the plan must come from the
   text that was sent.
@@ -250,9 +288,12 @@ artifacts/          generated: plan library; cache, catalog and out-of-scope vec
 data/               supplied inputs: 11 support articles, 578-entry deeplink catalog, 20 queries
 reports/            raw output behind every figure in docs/metrics.md
 docs/               design, decisions, metrics, demo runbook
-presentation/       the presentation (.pptx and a PDF copy) and the demo video
+Thapar_DeadlockDodgers_Submission.pptx / .pdf   the presentation (organisers' template)
+Thapar_DeadlockDodgers_Demo.mp4                  the demo video
 AI_DISCLOSURE.md    where AI is used, in the product and in building it
 requirements.txt    dependencies (requirement.txt is the same file; requirements.lock pins them)
+Dockerfile          API image, encoder baked in
+docker-compose.yml  API + Ollama + model pull in one command (docker-compose.gpu.yml adds the GPU)
 ```
 
 ## Documentation

@@ -2,9 +2,12 @@
 .git/
 __pycache__/
 .pytest_cache/
-presentation/
+vendor/
+*.pptx
+*.mp4
 *.pdf
 docs/
 tests/
 build/
+reports/
 results.jsonl

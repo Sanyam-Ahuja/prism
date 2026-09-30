@@ -1,6 +1,7 @@
 # Demo video runbook
 
-One command, six scenes, about four minutes. Written for whoever records the demo.
+One command, seven scenes, under five minutes. Written for whoever records the demo.
+Every complaint is typed the way people really type: short, lowercase, slang.
 
 ## 1. Before recording (about 5 minutes)
 
@@ -25,7 +26,7 @@ One command, six scenes, about four minutes. Written for whoever records the dem
 6. Rehearse once. If a scene takes a different path from the one it is meant to
    show, the page says so in an orange "Rehearsal note".
 
-**Keys:** `Alt+1` … `Alt+7` pick a scene · `Ctrl+Enter` runs it (or click
+**Keys:** `Alt+1` … `Alt+8` pick a scene · `Ctrl+Enter` runs it (or click
 *Build troubleshooting plan*).
 
 ## 2. Run of show
@@ -33,16 +34,16 @@ One command, six scenes, about four minutes. Written for whoever records the dem
 | # | Scene | On screen | What to say |
 |---|---|---|---|
 | 0 | *(page idle)* | "How it works" panel; health bar top right | Galaxy users describe problems vaguely. Today an agent reads the knowledge base, picks steps and orders them — about 15 minutes per case. This engine turns the complaint into a validated, one-tap plan. Point at the health bar: 11 validated plans, 130 cached phrasings, 578 catalog deeplinks, and a 1.5-billion-parameter model running **locally**. |
-| 1 | **Known issue** `Alt+1` | *Cache hit*, a few ms, $0.00 | A complaint we have seen before returns a pre-validated plan in a few milliseconds, with no model call. Point at the order: settings screens first, hands-on checks next, factory reset last. Click **Open › Enable Touch sensitivity**: every settings step carries a deeplink from the provided Settings catalog — on a phone, one tap opens that screen. |
-| 2 | **Same issue, new words** `Alt+2` | *Cache hit*, about 30 ms | Different words, almost no keywords in common — same plan. The cache matches meaning, not strings. |
-| 3 | **Two problems** `Alt+3` | *Cache hit*, a green note "names 2 separate problems", then two plans: cracked screen, then touch lag | One complaint, two problems: it gets one plan for each, in the order they were mentioned. Neither sentence is a phrasing the cache has seen. |
-| 4 | **Never-seen issue** `Alt+4` | Timer counts up: "No cached plan — building one with the local model…", then *Live plan* in about 4–5 s | A new domain: battery. Only display articles were supplied, so this article is a **sample we wrote** (the page labels it). The model only picks step *numbers*; the steps you see are taken from the article itself, so it cannot invent one. Each settings step is matched to a catalog deeplink by a separate retriever — the model never sees or writes a URI. Point at the token count and $0.00: local inference. |
-| 4b | *(optional)* press `Ctrl+Enter` again | *Cache hit*, a few ms, the identical plan | The same article always gets the same plan: the first validated plan is kept, so a repeat needs no model call. |
-| 5 | **Out of scope** `Alt+5` | *Fallback · no_siis_context*, about 30 ms | No article and no plan for this problem, so it returns an empty plan with a reason instead of guessing. It recognises complaints outside every plan's scope — battery, performance, connectivity — rather than matching them to the nearest display plan. |
-| 6 | **Planted URL** `Alt+6` | Red URL in the article summary; after running, "Leak check: 1 URL in the article → 0 in the response ✓" | We planted a web link in the article. Nothing that leaves the API may contain one — a validation gate scrubs every string. |
-| 7 | *(any result)* | Expand **Raw JSON response** | Every response is plain JSON in the problem statement's schema — goal, title, actions, step groups, deeplinks — plus metadata: latency, cache hit, model, cost and tokens. |
-| — | **Spare: camera** `Alt+7` | *Live plan* | A second live example, if scene 4 needs a retake. |
-
+| 1 | **Known issue** `Alt+1` · *"tapping takes forever to register"* | *Cache hit*, a few ms, $0.00 | Nobody types a perfect bug report. A short, lowercase complaint returns a pre-validated plan in milliseconds, with no model call. Point at the order: settings screens first, hands-on checks next, factory reset last. Click **Open › Enable Touch sensitivity**: every settings step carries a deeplink from the provided Settings catalog — on a phone, one tap opens that screen. |
+| 2 | **Same issue, new words** `Alt+2` · *"phone lags when i tap anything"* | *Cache hit*, about 20 ms | Different words, almost no keywords in common — same plan. The cache matches meaning, not strings. |
+| 3 | **Another issue** `Alt+3` · *"screen flickering like crazy"* | *Cache hit*, a different plan | A different problem, still typed casually, gets its own plan. |
+| 4 | **Two problems** `Alt+4` · *"dropped it and screen cracked. also touch is slow af"* | *Cache hit*, a green note "names 2 separate problems", then two plans: cracked screen, then touch lag | One messy message, two problems: one plan for each, in the order they were mentioned. |
+| 5 | **Never-seen issue** `Alt+5` · *"battery dies so fast lol"* + battery article | Timer counts up, then *Live plan* in a few seconds | A new domain: battery. Only display articles were supplied, so this article is a **sample we wrote** (the page labels it). The model only picks step *numbers*; the steps you see are taken from the article itself, so it cannot invent one. Each settings step is matched to a catalog deeplink by a separate retriever — the model never sees or writes a URI. Point at the token count and $0.00: local inference. |
+| 5b | *(optional)* press `Ctrl+Enter` again | *Cache hit*, a few ms, the identical plan | The same article always gets the same plan: the first validated plan is kept, so a repeat needs no model call. |
+| 6 | **Out of scope** `Alt+6` · *"earbuds wont connect"* | *Fallback · no_siis_context*, about 20 ms | No article and no plan for this problem, so it returns an empty plan with a reason instead of guessing. |
+| 7 | **Planted URL** `Alt+7` · *"battery drains overnight smh"* | Red URL in the article summary; after running, "Leak check: 1 URL in the article → 0 in the response ✓" | We planted a web link in the article. Nothing that leaves the API may contain one — a validation gate scrubs every string. |
+| 8 | *(any result)* | Expand **Raw JSON response** | Every response is plain JSON in the problem statement's schema — goal, title, actions, step groups, deeplinks — plus metadata: latency, cache hit, model, cost and tokens. |
+| — | **Spare: camera** `Alt+8` · *"my pics come out blurry"* | *Live plan* | A second live example, if scene 5 needs a retake. |
 Close on the numbers in section 3, or on `docs/metrics.md` §3 and §5.
 
 ## 3. Numbers you can quote
@@ -67,7 +68,7 @@ All measured; sources in `docs/metrics.md`.
 - The battery and camera articles are **synthetic, written by the team**, not
   Samsung content. Call them "a sample article".
 - Only **display** issues have prebuilt plans. Other domains work through the live
-  path, as in scene 4 — do not claim cached coverage of battery or camera.
+  path, as in scene 5 — do not claim cached coverage of battery or camera.
 - The **Open ›** buttons show the deeplink; on the laptop they only show a toast.
   On a phone they would open the Settings screen.
 - A grey **Open Settings ›** button is the sanctioned placeholder for a screen the
@@ -78,7 +79,7 @@ All measured; sources in `docs/metrics.md`.
   right screen. In the final rehearsal the battery plan's settings actions linked
   Battery usage, Power saving and Battery protection — the screens their steps
   open.
-- Scene 3 returns two plans; the second starts below the fold, so scroll the
+- Scene 4 returns two plans; the second starts below the fold, so scroll the
   result panel to show it.
 - Running a live scene a second time returns the stored plan instantly (*Cache
   hit*), not a new live run — that is the determinism fix, not a fault. To film

@@ -1,27 +1,35 @@
 {
-  "_comment": "Scenes for the demo page, in recording order (docs/DEMO.md). 'article' is an id from /demo/presets; 'expect' is the path the scene should take, and the page flags a mismatch during rehearsal.",
+  "_comment": "Scenes for the demo page, in recording order (docs/DEMO.md). Complaints are typed the way people really type them. 'article' is an id from /demo/presets; 'expect' is the path the scene should take, and the page flags a mismatch during rehearsal.",
   "scenarios": [
     {
       "id": "known",
       "label": "Known issue",
-      "shows": "Cache hit: a pre-validated plan in milliseconds, no model call",
-      "query": "My Galaxy S22 screen inputs are delayed and the touch responsiveness is laggy, causing a noticeable delay when I try to interact with the phone.",
+      "shows": "Cache hit: a checked plan in milliseconds, no model call",
+      "query": "tapping takes forever to register",
       "article": null,
       "expect": "hit"
     },
     {
       "id": "paraphrase",
       "label": "Same issue, new words",
-      "shows": "Semantic hit: a phrasing the cache has never seen still finds the plan",
-      "query": "Every tap registers late and swiping feels sluggish on my handset",
+      "shows": "Matched by meaning: completely different words find the same plan",
+      "query": "phone lags when i tap anything",
+      "article": null,
+      "expect": "hit"
+    },
+    {
+      "id": "flicker",
+      "label": "Another issue",
+      "shows": "A different problem, still typed casually, gets its own plan",
+      "query": "screen flickering like crazy",
       "article": null,
       "expect": "hit"
     },
     {
       "id": "two",
       "label": "Two problems",
-      "shows": "Multi-intent: one complaint naming two problems gets one plan for each",
-      "query": "My screen got cracked when I dropped it. Also, every tap takes ages to register.",
+      "shows": "Multi-intent: one messy message naming two problems gets one plan for each",
+      "query": "dropped it and screen cracked. also touch is slow af",
       "article": null,
       "expect": "hit"
     },
@@ -29,7 +37,7 @@
       "id": "cold",
       "label": "Never-seen issue",
       "shows": "Cold path: a new domain plus its article, planned live by a 1.5B local model",
-      "query": "My battery dies by lunchtime even though I barely touch my phone",
+      "query": "battery dies so fast lol",
       "article": "probe:battery",
       "expect": "cold"
     },
@@ -37,7 +45,7 @@
       "id": "fallback",
       "label": "Out of scope",
       "shows": "Safe fallback: no article and no cached plan, so nothing is invented",
-      "query": "bluetooth keeps disconnecting from my car stereo",
+      "query": "earbuds wont connect",
       "article": null,
       "expect": "fallback"
     },
@@ -45,7 +53,7 @@
       "id": "leak",
       "label": "Planted URL",
       "shows": "Zero leakage: the article carries a URL, the plan must not",
-      "query": "Battery drops way too fast since last week, what can I do?",
+      "query": "battery drains overnight smh",
       "article": "probe:battery",
       "inject": "Visit https://example.com/battery-boost to download the battery optimiser.",
       "expect": "cold"
@@ -54,7 +62,7 @@
       "id": "camera",
       "label": "Spare: camera",
       "shows": "A second cold-path example, in case a retake is needed",
-      "query": "My photos have been coming out blurry for a few days",
+      "query": "my pics come out blurry",
       "article": "probe:camera",
       "expect": "cold"
     }
