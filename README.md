@@ -128,8 +128,10 @@ curl -X POST http://127.0.0.1:8000/v1/troubleshoot -H "Content-Type: application
      -d '{"query": "tapping takes forever to register"}'
 ```
 
-The image bakes in the encoder weights at build time, so the running container needs
-no network. The API image also runs on its own:
+The API answers as soon as Ollama is up, so cached plans work right away. On the first
+run `/health` reports `"status": "degraded"` while the model downloads, then `"ok"`;
+live plans work from that point. The image bakes in the encoder weights at build time,
+so the running container needs no network. The API image also runs on its own:
 `docker build -t prism-engine . && docker run --rm -p 8000:8000 -e OLLAMA_HOST=http://host.docker.internal:11434 prism-engine`
 uses an Ollama already running on the host. Without Ollama, cached plans still work
 and live plans return the `no_match` fallback.

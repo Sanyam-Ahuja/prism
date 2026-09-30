@@ -6,9 +6,11 @@
 #
 # Then: http://127.0.0.1:8000/health and POST http://127.0.0.1:8000/v1/troubleshoot
 # The first run downloads the Python packages, the encoder and qwen2.5:1.5b (~1 GB).
+# The API starts as soon as Ollama is up and serves cached plans at once; /health
+# says "degraded" until the model pull finishes, then "ok" and live plans work.
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.34.4        # the version the benchmarks ran on
     volumes:
       - ollama:/root/.ollama
     environment:
@@ -20,7 +22,7 @@ services:
       retries: 30
 
   model:                               # one-shot: pull the extractor, then exit
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.34.4
     depends_on:
       ollama:
         condition: service_healthy
@@ -36,8 +38,8 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
     depends_on:
-      model:
-        condition: service_completed_successfully
+      ollama:
+        condition: service_healthy
 
 volumes:
   ollama: {}
