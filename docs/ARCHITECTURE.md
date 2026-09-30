@@ -1,7 +1,7 @@
 # Smart Guided Troubleshooting Engine — Architecture
 
 Theme 02, Samsung PRISM GenAI Hackathon 3.0.
-Authoritative spec: `Theme_2_Troubleshooting_Smart_Guided_Troubleshooting_Engine_OCR.pdf` (the mother doc).
+Authoritative spec: the Theme 02 problem statement PDF supplied by the organisers (`Theme_2_Troubleshooting_Smart_Guided_Troubleshooting_Engine_OCR.pdf`, not redistributed here).
 This document describes *how* the system satisfies that spec. Where this document and the PDF disagree, the PDF wins.
 
 ---
@@ -387,7 +387,7 @@ The margin is why §7 emits indices instead of prose. Under naive full-text gene
 
 Two hard requirements follow:
 - `OLLAMA_KEEP_ALIVE=-1` — the 12.9 s load must never land on a request.
-- The Stage 2 model must fit in 7.5 GiB VRAM. `gemma4:26b` (18 GB) **does not** and would spill to CPU. See TECH_PLAN.md §4.
+- The Stage 2 model must fit in 7.5 GiB VRAM. `gemma4:26b` (18 GB) **does not** and would spill to CPU.
 
 ---
 

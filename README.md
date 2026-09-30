@@ -19,7 +19,7 @@ carries a deeplink that opens the right Settings screen in one tap.
 
 | Item | Where |
 |---|---|
-| Source Code | This repository: [`api/`](api/), [`engine/`](engine/), [`validators/`](validators/), [`scripts/`](scripts/), [`tests/`](tests/); dependencies in [`requirements.txt`](requirements.txt) (exact pins in [`requirements.lock`](requirements.lock)) |
+| Source Code | This repository: [`api/`](api/), [`engine/`](engine/), [`validators/`](validators/), [`scripts/`](scripts/), [`tests/`](tests/); dependencies in [`requirements.txt`](requirements.txt), also as [`requirement.txt`](requirement.txt) to match the form (exact pins in [`requirements.lock`](requirements.lock)) |
 | Presentation | [`presentation/Smart_Guided_Troubleshooting_Engine.pptx`](presentation/Smart_Guided_Troubleshooting_Engine.pptx) · [PDF copy](presentation/Smart_Guided_Troubleshooting_Engine.pdf) |
 | Video | [`presentation/Smart_Guided_Troubleshooting_Engine_demo.mp4`](presentation/Smart_Guided_Troubleshooting_Engine_demo.mp4): 2.5 min, 1080p, captioned screen recording of the real system running locally. Recording runbook for a narrated take: [`docs/DEMO.md`](docs/DEMO.md) |
 | AI Disclosure | [`AI_DISCLOSURE.md`](AI_DISCLOSURE.md) |
@@ -252,8 +252,7 @@ reports/            raw output behind every figure in docs/metrics.md
 docs/               design, decisions, metrics, demo runbook
 presentation/       the presentation (.pptx and a PDF copy) and the demo video
 AI_DISCLOSURE.md    where AI is used, in the product and in building it
-Theme02_Input_Kit/  the Theme 02 input kit, as supplied
-participant-kit/    Theme 05's participant kit, kept as a reference for submission conventions
+requirements.txt    dependencies (requirement.txt is the same file; requirements.lock pins them)
 ```
 
 ## Documentation
@@ -264,11 +263,9 @@ participant-kit/    Theme 05's participant kit, kept as a reference for submissi
 | [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) | field rules, gates G0–G16, catalog hazards |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | decision records ADR-001 to ADR-023, open questions for the mentor |
 | [`docs/metrics.md`](docs/metrics.md) | measured results in the Appendix C format |
-| [`docs/BENCHMARK_ENVIRONMENT.md`](docs/BENCHMARK_ENVIRONMENT.md) | how the laptop was prepared for the final benchmark run, and what it changed |
 | [`docs/PS_ALIGNMENT.md`](docs/PS_ALIGNMENT.md) | requirement-by-requirement audit against the problem statement |
 | [`docs/RUBRIC.md`](docs/RUBRIC.md) | how step accuracy and deeplink relevance are scored |
 | [`docs/DEMO.md`](docs/DEMO.md) | demo video runbook: setup, scenes, numbers to quote |
-| [`docs/TECH_PLAN.md`](docs/TECH_PLAN.md) | stack, repo layout, milestones |
 
 The support articles, deeplink catalog, queries and response schema come from the
 hackathon's Theme 02 kit. The battery, camera and performance articles in

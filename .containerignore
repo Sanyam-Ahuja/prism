@@ -2,9 +2,7 @@
 .git/
 __pycache__/
 .pytest_cache/
-participant-kit/
-Theme02_Input_Kit/
-chat.md
+presentation/
 *.pdf
 docs/
 tests/

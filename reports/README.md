@@ -4,9 +4,10 @@ Raw output behind every figure in [`docs/metrics.md`](../docs/metrics.md) (PDF
 Appendix C), plus the supporting measurements that do not fit that template's
 tables. Measured 2026-09-30 on the machine described in `environment.txt`, all in
 one sequential run (21:30–22:05) with nothing else running on the laptop; each
-`.txt` file starts with the command that produced it. What was cleared on the
-laptop for this run, and how much it changed the timings:
-[`docs/BENCHMARK_ENVIRONMENT.md`](../docs/BENCHMARK_ENVIRONMENT.md).
+`.txt` file starts with the command that produced it. Before the run, leftover
+model runners and background jobs were stopped and the GPU was confirmed idle; on
+the busier machine the same timings were slower (live-path P95 5.2 s instead of
+4.4 s), with identical accuracy.
 
 ## Reproduce
 

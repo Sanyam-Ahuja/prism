@@ -203,4 +203,4 @@ Derived from the input kit; assert these so silent data swaps are caught.
 | URLs/contact details in SIIS source | **3 rows** (`row_3`, `row_11`, `row_17`) — the kit's README claims none; G0 catches them |
 | domain coverage of public queries | **Display only** |
 
-The last row is the largest generalization risk: the PDF names **Battery, Display, Camera, Performance**, and the public set exercises one of the four. Nothing in the pipeline may be display-specific. See TECH_PLAN.md M6.
+The last row is the largest generalization risk: the PDF names **Battery, Display, Camera, Performance**, and the public set exercises one of the four. Nothing in the pipeline may be display-specific; `tests/test_domains.py` checks this with battery, camera and performance probes.

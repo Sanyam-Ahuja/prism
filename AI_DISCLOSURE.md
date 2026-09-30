@@ -19,8 +19,8 @@ source article, and deeplinks are copied from the supplied catalog.
 The team developed the project with **Claude Code** (Anthropic's coding assistant,
 Claude Opus models) as a pair programmer. The team directed the work and made the
 product decisions. Claude Code wrote much of the code, tests, evaluation scripts and
-documentation. 10 of the repository's 11 commits carry a
-`Co-Authored-By: Claude` trailer.
+documentation. Commits do not carry per-commit AI attribution; this document is the
+disclosure, and it covers the whole repository.
 
 AI assistance also produced:
 
