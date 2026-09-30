@@ -15,3 +15,7 @@ results.jsonl
 .env
 *.env
 !*.env.example
+
+# local Claude Code state
+.claude/
+STATUS.md
