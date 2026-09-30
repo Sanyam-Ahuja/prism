@@ -22,7 +22,7 @@ that opens the right Settings screen in one tap.
 - **Every response** is schema-valid JSON with no web URLs. Every deeplink in it is
   copied from the provided catalog.
 
-![The demo page: a known complaint answered from the cache in 12 ms, with one-tap Settings deeplinks](docs/img/demo.png)
+![The demo page: "tapping takes forever to register" answered from the cache in 30 ms, with one-tap Settings deeplinks](docs/img/demo.png)
 
 ## Submission checklist
 
@@ -34,7 +34,7 @@ Everything below is in the commit tagged `PRISM_GENAI_HACKATHON_Y2026`.
 | Requirements | [`requirements.txt`](requirements.txt), also as [`requirement.txt`](requirement.txt); exact pins in [`requirements.lock`](requirements.lock) |
 | Docker files | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml) (API + Ollama + model), [`docker-compose.gpu.yml`](docker-compose.gpu.yml) (NVIDIA GPU) |
 | Presentation | [`Thapar_DeadlockDodgers_Submission.pptx`](Thapar_DeadlockDodgers_Submission.pptx) · [PDF copy](Thapar_DeadlockDodgers_Submission.pdf), on the organisers' template |
-| Video | [`Thapar_DeadlockDodgers_Demo.mp4`](Thapar_DeadlockDodgers_Demo.mp4): captioned screen recording of the real system running locally, under 5 minutes |
+| Video | [`Thapar_DeadlockDodgers_Demo.mp4`](Thapar_DeadlockDodgers_Demo.mp4): 2 min 52 s (limit 5 min), 1080p, captioned screen recording of the real system running locally; every complaint is typed the way people really type |
 | AI Disclosure | [`AI_DISCLOSURE.md`](AI_DISCLOSURE.md) |
 | README | This file: [setup](#quickstart), [Docker](#docker), [results](#results) |
 | APK/SDK (if any) | Not applicable. The deliverable is a REST API (`POST /v1/troubleshoot`, `GET /health`); there is no APK or SDK. |
