@@ -13,7 +13,7 @@ laptop for this run, and how much it changed the timings:
 ```bash
 python scripts/run_reports.py fixed                        # no LLM: tests, scoring, deeplink, cache and multi-intent evals
 python scripts/run_reports.py models --models qwen2.5:1.5b llama3.2:1b llama3.2:1b-instruct-q4_K_M llama3.2:3b qwen2.5:3b gemma3:1b gemma3:4b
-python scripts/run_reports.py model --model qwen2.5:1.5b   # latency, results.jsonl, Baseline ablation, HTTP stress, determinism
+python scripts/run_reports.py model --model qwen2.5:1.5b   # latency, results.jsonl, Baseline and step ablations, HTTP stress, determinism
 python scripts/verify_cold_path.py breakdown               # startup and step-accuracy breakdown
 ```
 
@@ -33,7 +33,7 @@ path's encoder runs on the CPU.
 | §2 | step accuracy, deeplink relevance | `score_plans.txt`, `compare_models.json` |
 | §3 | latency | `bench.txt`, `stress_api.txt` |
 | §4 | tokens, cache hit rate | `compare_models.json`, `cache_shipped.txt`, `cache_test.txt` |
-| §5 | ablation | `ablation_generate.txt`, `ablation_select.txt`, `dl_*.txt` |
+| §5 | ablation | `ablation_generate.txt`, `ablation_select.txt`, `dl_*.txt`; step level: `ablation_steps.txt` (§I below) |
 | §6 | edge cases | `multi_intent.txt`, `cache_*.txt`, `determinism.txt`, `verify_startup_and_steps.txt`, `stress_api.txt`, `dl_display_hybrid.txt` |
 | — | regression suite: 81 passed, 1 skipped | `tests.txt` |
 
@@ -276,3 +276,35 @@ never reaches the model and cannot differ.
   comparison the 4-bit `llama3.2:1b` now ties `qwen2.5:1.5b` at the median and
   beats it at P95, and `llama3.2:3b` now meets the 8 s budget; the choice of
   `qwen2.5:1.5b` stands on quality (§E).
+
+## I. Step selection against step writing (`ablation_steps.txt`, ADR-001)
+
+The same `qwen2.5:1.5b`, the same 11 SIIS documents and the same decoding settings
+(temperature 0, seed 42, grammar-constrained JSON), run two ways. The shipped way
+selects step numbers, which code expands to the article's text. The baseline, what
+a typical retrieval-augmented pipeline does, gets the article and writes its
+steps as text. Every output step of both goes through the same checker: is it the
+article's own text, and if not, how close is the nearest article sentence (bge-small
+cosine)?
+
+| | Select step numbers (shipped) | Write steps as text |
+|---|---|---|
+| Steps in the plans | 84 | 159 |
+| The article's own words | **84 (100%)** | **75 (47.2%)** |
+| Close paraphrase (cosine ≥ 0.85) | 0 | 62 (39.0%) |
+| Loose paraphrase (0.75–0.85) | 0 | 14 (8.8%) |
+| No article sentence with cosine ≥ 0.75 | 0 | 8 (5.0%) |
+| P50 / P95 latency | 2672 / **4495 ms** | 3168 / **10136 ms** |
+| Tokens (prompt + completion) | 606 + 277 | 959 + 447 |
+| Invalid JSON / hit the output cap | 2 / 2 (recovered by `salvage`) | 0 / 0 |
+
+- **More than half the written steps are rewritten**, so none of them can be checked
+  against the source mechanically. The cut-off is a judgement call, so the report
+  also gives the unsupported share at five cut-offs (1.3% below 0.70, 25.8% below
+  0.90) and prints all 8 steps below 0.75. Several are fragments ("Tap, select
+  registered, and then tap") or copied link text ("Learn more about coverage and
+  terms") rather than inventions, so the defensible claim is "unverifiable", not
+  "hallucinated".
+- **Writing misses the latency budget:** 61% more output tokens puts its P95 at
+  10.1 s against the 8 s target. Selection stays at 4.5 s.
+- Neither variant leaked a web URL in its raw output on these articles.

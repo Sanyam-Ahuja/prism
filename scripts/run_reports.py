@@ -44,6 +44,7 @@ MODEL = [
     ("batch", ["scripts/run_batch.py"]),
     ("ablation_generate", ["scripts/ablation_baseline.py", "--mode", "generate"]),
     ("ablation_select", ["scripts/ablation_baseline.py", "--mode", "select"]),
+    ("ablation_steps", ["scripts/ablation_steps.py"]),
     ("stress_api", ["scripts/stress_api.py", "--cold", "33"]),
     ("determinism", ["scripts/determinism_probe.py"]),
 ]

@@ -20,6 +20,15 @@ ADRs carry the reasoning; `ARCHITECTURE.md` carries the design. When revisiting 
 
 **Rejected:** full-text generation with a post-hoc similarity check against the source — slower, and "similar enough" is a threshold we would have to defend to a judge.
 
+**Measured later** (`scripts/ablation_steps.py`, `reports/ablation_steps.txt`): the
+same `qwen2.5:1.5b`, the same 11 articles and the same decoding settings, asked to
+write its plan's steps as text instead of selecting their numbers. Only 47.2% of
+its 159 steps are the article's own words (75 of 159). 39.0% are close
+paraphrases, 8.8% loose ones, and 5.0% (8 steps) have no sentence in the article
+with cosine ≥ 0.75. It also writes 61% more tokens (447 against 277) and misses
+the 8 s budget (P95 10.1 s against 4.5 s). Selection gives 84 of 84 steps that are
+the article's text.
+
 ---
 
 ## ADR-002 — The LLM never sees or emits a URI
