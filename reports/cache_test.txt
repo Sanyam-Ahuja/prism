@@ -1,0 +1,9 @@
+# python scripts/eval_cache.py --set test
+# exit=0  elapsed=24.3s
+
+set=test  tau=0.7 high=0.8 margin=0.04  out-of-scope anchors=on  held-out n=27 (0 leaked)  negatives n=38
+  hit rate          : 27/27 = 100.0%   (target >= 80%)
+  correct routing   : 25/27 = 92.6%
+  wrong-plan hits   : 2
+  FALSE hits on OOD : 1/38 = 2.6%  (target 0%)
+  extra plans on single-problem queries: 0/27

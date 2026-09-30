@@ -173,14 +173,22 @@ def main() -> int:
     enc = get_encoder()
     texts = [QUERY_PREFIX + normalize(t) for _, t in cache_rows]
     vecs = enc.encode(texts, normalize_embeddings=True).astype(np.float32)
+    # Complaint topics no plan covers, as rows that map to no plan (ADR-020).
+    ood = json.load(open("build/out_of_scope.json"))["anchors"]
+    ood_vecs = enc.encode([QUERY_PREFIX + normalize(t) for t in ood],
+                          normalize_embeddings=True).astype(np.float32)
 
     os.makedirs(ART, exist_ok=True)
     json.dump({"count": len(library), "plans": library},
               open(f"{ART}/plan_library.json", "w"), indent=1, sort_keys=True)
     np.save(f"{ART}/cache_vectors.npy", vecs)
+    np.save(f"{ART}/ood_vectors.npy", ood_vecs)
     json.dump({"rows": [{"plan_id": p, "text": t} for p, t in cache_rows],
+               "out_of_scope": ood,
                "tau_link": TAU_LINK, "dim": int(vecs.shape[1])},
               open(f"{ART}/cache_manifest.json", "w"), indent=1)
+    # The catalog, embedded once here instead of on every API start (7.1 s).
+    resolver.save_vectors(f"{ART}/catalog_vectors.npy")
 
     # Two readings of Appendix C section 1 ("auto actions carrying valid
     # actionable deeplink >= 90%"). bixby://dummy_positive IS a catalog entry and

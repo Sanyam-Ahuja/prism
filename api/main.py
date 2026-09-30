@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 import os
 import time
@@ -19,7 +20,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-from engine.cache import TAU_HIT, PlanCache
+from engine.articles import ArticlePlans, article_text
+from engine.cache import PlanCache
+from engine.variations import generate as gen_variations
 from validators.gates import Ctx, blocking, load_ctx, validate_envelope
 from validators.scrub import strip_urls
 
@@ -48,7 +51,11 @@ EMIT_TOKENS = os.environ.get("PRISM_META_TOKENS", "1") not in ("0", "false", "Fa
 FALLBACK_NO_MATCH = "no_match"
 FALLBACK_NO_SIIS = "no_siis_context"
 
-_state: dict[str, Any] = {"cache": None, "ctx": None, "cold": None,
+# Plans keyed by their reference article (ADR-019). Off only to benchmark the
+# cold path over HTTP with articles the library already knows.
+ARTICLE_CACHE = os.environ.get("PRISM_ARTICLE_CACHE", "1") not in ("0", "false", "False")
+
+_state: dict[str, Any] = {"cache": None, "ctx": None, "cold": None, "articles": None,
                           "ready": False, "error": None}
 
 
@@ -62,6 +69,8 @@ async def lifespan(app: FastAPI):
     try:
         _state["cache"] = PlanCache()
         _state["ctx"] = load_ctx("data/deeplinks.json")
+        with open("data/siis_responses.json", encoding="utf-8") as f:
+            _state["articles"] = ArticlePlans(_state["cache"].plans, json.load(f)["responses"])
         from engine.cold import ColdPath
         _state["cold"] = ColdPath(_state["cache"].encoder)
         _state["ready"] = True
@@ -200,19 +209,36 @@ async def troubleshoot(req: TroubleshootRequest, request: Request) -> JSONRespon
 
     cache: PlanCache = _state["cache"]
     ctx: Ctx = _state["ctx"]
+    article = article_text(req.siis_response) if req.siis_response else ""
 
-    plan, sim = await asyncio.to_thread(cache.lookup, req.query, TAU_HIT)
-    if plan is not None:
-        log.info("[%s] cache hit sim=%.3f plan=%s", rid, sim, plan["id"])
-        ctxs = [dict(plan["plan"], score=round(min(1.0, sim), 3))]
-        return JSONResponse(_envelope(req.query, plan["query_variations"], ctxs,
+    # No reference text: the semantic cache is the only source of a plan. One
+    # plan per problem the complaint names (ADR-021).
+    if not article.strip():
+        hits = await asyncio.to_thread(cache.lookup_all, req.query)
+        if not hits:
+            log.info("[%s] miss, no siis_response", rid)
+            return JSONResponse(_envelope(req.query, [], [], t0, False, None, 0.0,
+                                          FALLBACK_NO_SIIS))
+        log.info("[%s] cache hit plans=%s sims=%s", rid, [p["id"] for p, _ in hits],
+                 [round(s, 3) for _, s in hits])
+        ctxs = [dict(p["plan"], score=round(min(1.0, s), 3)) for p, s in hits]
+        return JSONResponse(_envelope(req.query, hits[0][0]["query_variations"], ctxs,
                                       t0, True, None, 0.0, None))
 
-    # Cache miss with no reference text: nothing to ground a plan in.
-    if not req.siis_response:
-        log.info("[%s] miss sim=%.3f no siis_response", rid, sim)
-        return JSONResponse(_envelope(req.query, [], [], t0, False, None, 0.0,
-                                      FALLBACK_NO_SIIS))
+    # Reference text supplied: the plan must derive from it (PDF 4.2.3), so the
+    # article decides, not the query's resemblance to a cached plan (ADR-019).
+    articles: ArticlePlans = _state["articles"]
+    if ARTICLE_CACHE:
+        plan = articles.compiled(article)
+        if plan is not None:
+            log.info("[%s] known article plan=%s", rid, plan["id"])
+            return JSONResponse(_envelope(req.query, plan["query_variations"],
+                                          [plan["plan"]], t0, True, None, 0.0, None))
+        seen = articles.recall(article)
+        if seen is not None:
+            log.info("[%s] repeated article, same plan as before", rid)
+            return JSONResponse(_envelope(req.query, gen_variations(req.query), seen,
+                                          t0, True, None, 0.0, None))
 
     cold = _state["cold"]
     remaining = max(0.5, DEADLINE_S - (time.perf_counter() - t0))
@@ -244,5 +270,8 @@ async def troubleshoot(req: TroubleshootRequest, request: Request) -> JSONRespon
         return JSONResponse(_envelope(req.query, result["variations"], [], t0,
                                       False, cold.model, result["cost_usd"],
                                       FALLBACK_NO_MATCH, tokens=result.get("tokens")))
+    if ARTICLE_CACHE:
+        # Every later request with this article gets this same plan (PDF 6.1).
+        env["response"]["contexts"] = articles.remember(article, result["contexts"])
     log.info("[%s] cold plan ok actions=%d", rid, len(env["response"]["contexts"][0]["actions"]))
     return JSONResponse(env)

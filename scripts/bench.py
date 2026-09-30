@@ -34,11 +34,23 @@ def main():
         for i in range(a.n):
             q = qs[i % len(qs)]
             t0 = time.perf_counter()
-            cache.lookup(q)
+            cache.lookup_all(q)             # what the API calls: one plan per problem
             lat.append((time.perf_counter() - t0) * 1000)
         p50, p95 = pct(lat, 50), pct(lat, 95)
         ok = "PASS" if p95 <= target else "FAIL"
         print(f"{name:44s} {len(lat):4d} {p50:7.1f}ms {p95:7.1f}ms {target:8d}ms  {ok}")
+
+    # A request carrying one of the library's own articles (ADR-019).
+    from engine.articles import ArticlePlans
+    rows = json.load(open("data/siis_responses.json", encoding="utf-8"))["responses"]
+    articles = ArticlePlans(cache.plans, rows)
+    lat = []
+    for i in range(a.n):
+        t0 = time.perf_counter()
+        articles.compiled(rows[i % len(rows)]["siis_response"]["content"])
+        lat.append((time.perf_counter() - t0) * 1000)
+    print(f"{'Known article - its compiled plan':44s} {len(lat):4d} {pct(lat, 50):7.1f}ms "
+          f"{pct(lat, 95):7.1f}ms {300:8d}ms  {'PASS' if pct(lat, 95) <= 300 else 'FAIL'}")
 
     if a.cold:
         from engine.cold import ColdPath

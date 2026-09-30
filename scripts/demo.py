@@ -115,7 +115,7 @@ def main():
 
         url = f"{base}/demo"
         say(f"[5/5] READY  ->  {url}\n"
-            "  Scenes: click them on the left, or press Alt+1 ... Alt+6. Ctrl+Enter runs.\n"
+            "  Scenes: click them on the left, or press Alt+1 ... Alt+7. Ctrl+Enter runs.\n"
             "  Ctrl+C here stops the API (Ollama keeps running).")
         if not a.no_browser:
             webbrowser.open(url)

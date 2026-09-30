@@ -1,5 +1,5 @@
-date        : 2026-09-30T12:15:58
-commit      : 935d2ac (dirty)
+date        : 2026-09-30T13:52:58
+commit      : 547d500 (dirty)
 os          : Windows-11-10.0.26200-SP0
 cpu         : Intel64 Family 6 Model 186 Stepping 2, GenuineIntel, 12 logical cores
 ram         : 15.7 GiB
@@ -7,6 +7,8 @@ gpu         : NVIDIA GeForce RTX 4050 Laptop GPU, 6141 MiB, 610.62
 python      : 3.13.9
 torch       : 2.14.0+cpu   sentence-transformers 6.1.0
 ollama      : 0.34.4
+  model     : llama3.2:1b-instruct-q4_K_M   1.2B Q4_K_M   0.81 GB  digest 22bc6b92eb01
+  model     : llama3.2:1b        1.2B Q8_0     1.32 GB  digest baf6a787fdff
   model     : gemma3:4b          4.3B Q4_K_M   3.34 GB  digest a2af6cc3eb7f
   model     : llama3.2:3b        3.2B Q4_K_M   2.02 GB  digest a80c4f17acd5
   model     : qwen2.5:3b         3.1B Q4_K_M   1.93 GB  digest 357c53fb659c

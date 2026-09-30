@@ -68,10 +68,13 @@ def main():
     os.makedirs(os.path.dirname(a.server_log) or ".", exist_ok=True)
     log = open(a.server_log, "w")
     t_launch = time.perf_counter()
+    # The cold requests below reuse the 11 library articles. With the article
+    # cache on (ADR-019) the API answers those from their compiled plans without
+    # the model, so it is switched off here to time the model path itself.
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "api.main:app", "--host", "127.0.0.1",
          "--port", str(a.port)], stdout=log, stderr=subprocess.STDOUT,
-        env=dict(os.environ, PYTHONUTF8="1"))
+        env=dict(os.environ, PYTHONUTF8="1", PRISM_ARTICLE_CACHE="0"))
     base = f"http://127.0.0.1:{a.port}"
     try:
         # ---- cold start: launch -> first 200, and -> status "ok" (extractor up)

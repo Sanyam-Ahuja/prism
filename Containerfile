@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
     HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1 \
     PRISM_EMBED_MODEL=/app/vendor/bge-small-en-v1.5 \
-    PRISM_EXTRACT_MODEL=gemma3:4b \
+    PRISM_EXTRACT_MODEL=qwen2.5:1.5b \
     OMP_NUM_THREADS=4
 
 # CPU-only torch: the GPU is reserved for the extractor, and the CUDA wheels

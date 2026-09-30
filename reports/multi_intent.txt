@@ -1,21 +1,31 @@
 # python scripts/eval_multi_intent.py
-# exit=0  elapsed=34.9s
+# exit=0  elapsed=82.8s
 
-supplied queries alone reaching their own plan: 20/20
+supplied queries alone reaching exactly their own plan: 20/20
+test paraphrases alone reaching exactly their own plan: 25/27
 
 known + known: 340 complaints (ordered pairs, different documents)
-  plan for the first-mentioned problem    :  325 = 95.6%
-  plan for the second-mentioned problem   :   15 = 4.4%
-  plan for neither (a third document)     :    0 = 0.0%
-  cache miss -> no_siis_context fallback  :    0 = 0.0%
-  both problems answered                  :    0 (a response holds one plan)
+  both problems answered                  :  340 = 100.0%
+  only the first-mentioned problem        :    0 = 0.0%
+  only the second-mentioned problem       :    0 = 0.0%
+  includes a plan for neither problem     :    0 = 0.0%
+  no plan -> no_siis_context fallback     :    0 = 0.0%
+  both, when each half routes right alone :  340 / 340 = 100.0%
+
+paraphrase pairs: 648 complaints (ordered pairs, different documents)
+  both problems answered                  :  551 = 85.0%
+  only the first-mentioned problem        :    4 = 0.6%
+  only the second-mentioned problem       :    2 = 0.3%
+  includes a plan for neither problem     :   91 = 14.0%
+  no plan -> no_siis_context fallback     :    0 = 0.0%
+  both, when each half routes right alone :  549 / 552 = 99.5%
 
 known + unknown: 60 complaints (each supplied query + 3 uncovered problems)
-  plan for the known problem, other dropped:   60 = 100.0%
-  plan for a different document           :    0 = 0.0%
-  cache miss -> no_siis_context fallback  :    0 = 0.0%
+  the known plan only, other dropped      :   60 = 100.0%
+  a plan for neither, or an extra one     :    0 = 0.0%
+  no plan -> no_siis_context fallback     :    0 = 0.0%
 
 PDF section 1 examples:
-  Screen flickers and the battery dies fast                  sim=0.832  hit  Screen flickers when using the Camera on a Galaxy phone
-  My phone got slow after the update                         sim=0.725  hit  Touchscreen issues on a Galaxy phone or tablet
-  Swipe gestures go the wrong way after installing an app    sim=0.732  hit  Touchscreen issues on a Galaxy phone or tablet
+  Screen flickers and the battery dies fast                  Screen flickers when using the Camera on a G (0.832)
+  My phone got slow after the update                         no plan -> no_siis_context
+  Swipe gestures go the wrong way after installing an app    Touchscreen issues on a Galaxy phone or tabl (0.732)

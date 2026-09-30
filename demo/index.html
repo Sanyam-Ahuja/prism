@@ -372,9 +372,11 @@ function render(d, status, rtt, article) {
   }
   const m = d.meta, ctx = (d.response && d.response.contexts) || [];
   const path = m.cache_hit ? "hit" : (ctx.length ? "cold" : "fallback");
+  // An article the engine has planned before gets that same plan back (ADR-019).
+  const repeat = m.cache_hit && !!article;
   const pathName = { hit: "Cache hit", cold: "Live plan", fallback: "Fallback" }[path];
-  const pathSub = { hit: "no model call", cold: m.model || "local model",
-                    fallback: m.fallback || "no plan" }[path];
+  const pathSub = { hit: repeat ? "article seen before · no model call" : "no model call",
+                    cold: m.model || "local model", fallback: m.fallback || "no plan" }[path];
   const tok = m.tokens ? (m.tokens.prompt + m.tokens.completion) : 0;
   const tiles = el("div", "tiles");
   tiles.append(
@@ -384,7 +386,7 @@ function render(d, status, rtt, article) {
     tile("Cost", "$" + Number(m.cost_usd || 0).toFixed(2), "local inference"));
   box.append(tiles);
 
-  if (active && active.expect && active.expect !== path &&
+  if (active && active.expect && active.expect !== path && !(repeat && active.expect === "cold") &&
       $("query").value.trim() === active.query) {
     box.append(el("div", "notice warn", "Rehearsal note: this scene expected “" +
       { hit: "Cache hit", cold: "Live plan", fallback: "Fallback" }[active.expect] +
@@ -404,6 +406,10 @@ function render(d, status, rtt, article) {
       ? "No cached plan matches this complaint and no article was supplied, so the engine returns an empty plan instead of inventing steps (PDF §4.2.3)."
       : "No plan could be built and validated from this article, so the engine returns an empty plan rather than an unvalidated one (PDF §4.2.3).";
     box.append(el("div", "notice", why));
+  }
+  if (ctx.length > 1) {
+    box.append(el("div", "notice ok", "This complaint names " + ctx.length +
+      " separate problems, so it gets one plan for each, in the order they were mentioned."));
   }
   for (const goal of ctx) box.append(renderGoal(goal));
 

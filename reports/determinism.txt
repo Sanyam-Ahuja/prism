@@ -1,6 +1,6 @@
 # python scripts/determinism_probe.py
 # PRISM_EXTRACT_MODEL=qwen2.5:1.5b
-# exit=0  elapsed=105.1s
+# exit=0  elapsed=106.1s
 
 model=qwen2.5:1.5b
 document                                        fresh cache-warm

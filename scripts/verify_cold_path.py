@@ -54,7 +54,7 @@ else:
     from engine.cache import PlanCache; PlanCache(); t2 = time.perf_counter()
     cold = ec.ColdPath(enc, model="qwen2.5:1.5b"); t3 = time.perf_counter()
     print(f"STARTUP  encoder load {t1 - t0:5.1f}s | plan cache {t2 - t1:4.1f}s | "
-          f"ColdPath (embeds 578 catalog entries) {t3 - t2:5.1f}s | total {t3 - t0:5.1f}s")
+          f"ColdPath (catalog vectors from the build) {t3 - t2:5.1f}s | total {t3 - t0:5.1f}s")
     from scripts.score_plans import step_accuracy
     lib = {p["doc"]: p["plan"] for p in json.load(open("artifacts/plan_library.json"))["plans"]}
     httpx.post(f"{ec.OLLAMA}/api/generate", json={"model": cold.model, "keep_alive": 0}, timeout=60)

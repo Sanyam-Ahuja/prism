@@ -1,5 +1,5 @@
 # python scripts/score_plans.py
-# exit=0  elapsed=0.9s
+# exit=0  elapsed=0.8s
 
 plan                                        step acc   compl  corr order
 --------------------------------------------------------------------------
@@ -17,5 +17,5 @@ Touchscreen issues on a Galaxy phone or      3.00/3    1.00  1.00  1.00
 --------------------------------------------------------------------------
 
 STEP ACCURACY     2.92 / 3.0   (mean over 11 plans)
-DEEPLINK RELEVANCE 1.67 / 2.0   (mean over 9 scored auto actions)
+DEEPLINK RELEVANCE 1.78 / 2.0   (mean over 9 scored auto actions)
   sanctioned dummy_positive excluded: 4  (31% of auto actions)

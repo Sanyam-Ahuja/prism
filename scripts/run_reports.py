@@ -31,8 +31,11 @@ FIXED = [
     ("dl_paraphrase_hybrid_tau020", ["scripts/eval_deeplinks.py", "--dense", "--tau", "0.20", "--labels", PARA]),
     ("dl_paraphrase_bm25", ["scripts/eval_deeplinks.py", "--recall", "--labels", PARA]),
     ("cache_shipped", ["scripts/eval_cache.py"]),
-    ("cache_single_070", ["scripts/eval_cache.py", "--tau", "0.70", "--high", "0.70"]),
-    ("cache_single_078", ["scripts/eval_cache.py", "--tau", "0.78", "--high", "0.78"]),
+    ("cache_shipped_no_ood", ["scripts/eval_cache.py", "--no-ood"]),
+    ("cache_single_070", ["scripts/eval_cache.py", "--tau", "0.70", "--high", "0.70", "--no-ood"]),
+    ("cache_single_078", ["scripts/eval_cache.py", "--tau", "0.78", "--high", "0.78", "--no-ood"]),
+    ("cache_test", ["scripts/eval_cache.py", "--set", "test"]),
+    ("cache_test_no_ood", ["scripts/eval_cache.py", "--set", "test", "--no-ood"]),
     ("multi_intent", ["scripts/eval_multi_intent.py"]),
 ]
 

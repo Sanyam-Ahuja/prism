@@ -1,7 +1,7 @@
-# python scripts/eval_cache.py --tau 0.78 --high 0.78
-# exit=0  elapsed=31.4s
+# python scripts/eval_cache.py --tau 0.78 --high 0.78 --no-ood
+# exit=0  elapsed=25.2s
 
-tau=0.78 high=0.78 margin=0.04  held-out n=26 (0 leaked)  negatives n=12
+set=calibration  tau=0.78 high=0.78 margin=0.04  out-of-scope anchors=off  held-out n=26 (0 leaked)  negatives n=12
   hit rate          : 20/26 = 76.9%   (target >= 80%)
   correct routing   : 19/26 = 73.1%
   wrong-plan hits   : 1

@@ -1,10 +1,10 @@
 # python scripts/eval_deeplinks.py --dense --tau 0.20 --labels tests/fixtures/deeplink_labels_paraphrase.json
-# exit=0  elapsed=27.8s
+# exit=0  elapsed=27.7s
 
 
 tau=0.2  dense=True
   catalog-match precision@1 : 6/15 = 40.0%
   intended-dummy correct    : 5/5 = 100.0%
   OVERALL                   : 11/20 = 55.0%
-  mean resolve latency      : 29.6 ms/descriptor
-  P50 / P95 resolve latency : 29.3 / 41.1 ms/descriptor
+  mean resolve latency      : 23.4 ms/descriptor
+  P50 / P95 resolve latency : 23.3 / 25.1 ms/descriptor

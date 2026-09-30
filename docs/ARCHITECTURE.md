@@ -50,26 +50,22 @@ The warm cache is literally `pipeline(doc)` executed at build time and frozen. T
               │  = pipeline(doc)      │  → Stage 2..5, full repair loop
               └───────────┬───────────┘
                           ▼
-        plan_library.json + variations + embeddings.npy   ← committed artifacts
+        plan_library.json + cache/out-of-scope/catalog vectors   ← committed artifacts
                           │
 ══════════════════════════╪═══════════════════════════════════════════════
                           ▼            RUNTIME (clock running)
   POST /v1/troubleshoot ──┐
                           ▼
-              ┌───────────────────────┐
-   Stage 0    │ normalize + embed     │  ~8 ms
+              ┌───────────────────────┐   no            ┌───────────────────────┐
+              │ siis_response present?├───────────────► │ Stage 0+1: normalize, │ HIT (one plan per
+              └───────────┬───────────┘                 │ split into problems,  │ problem) ──► 200
+                          ▼ yes                          │ semantic cache lookup │ MISS or out of
+              ┌───────────────────────┐   HIT            └───────────────────────┘ scope ──► no_siis_context
+              │ article-keyed plans   ├──────────────► 200  (compiled plan for a library article,
+              │ (ADR-019)             │                      or the plan this article got before)
               └───────────┬───────────┘
+                    unseen article
                           ▼
-              ┌───────────────────────┐
-   Stage 1    │ semantic cache lookup │  ~2 ms   HIT ──► serialize ──► 200
-              │ (brute-force cosine)  │
-              └───────────┬───────────┘
-                       MISS
-                          ▼
-              ┌───────────────────────┐   no siis_response
-              │ siis_response present?├──────────────► fallback: no_siis_context
-              └───────────┬───────────┘
-                          ▼ yes
               ┌───────────────────────┐
    Stage 2    │ structure extraction  │  local LLM, resident, ~150 out tok
               │ (index selection)     │
@@ -112,14 +108,26 @@ Corpus: for each compiled plan, one vector per canonical query **plus one per ge
 
 Lookup is brute-force cosine over a single `(N, 384)` float32 matrix: one `numpy` matmul. At N ≈ 121, or even N ≈ 5000, this is sub-millisecond. **No FAISS, no SQLite, no Redis.** An ANN index at this scale adds a dependency, a build step and a recall cliff, and buys nothing.
 
-Decision rule:
+Decision rule for one query vector (`engine/cache.py::PlanCache.decide`):
 
-| cosine | action |
+| condition | action |
 |---|---|
-| ≥ `TAU_HIT` (0.82, tunable) | cache hit → return frozen plan, `cache_hit: true`, `cost_usd: 0.0` |
-| < `TAU_HIT` | cache miss → Stage 2 if `siis_response` present, else fallback |
+| best cosine < `TAU_HIT` (0.70) | miss |
+| an out-of-scope anchor is at least as close as the best plan seed | miss: out of scope (ADR-020) |
+| best cosine ≥ `TAU_HIGH` (0.80) | hit |
+| otherwise, margin over the best *other* plan ≥ `TAU_MARGIN` (0.04) | hit, else miss |
 
-`TAU_HIT` is calibrated against a held-out paraphrase set (see TECH_PLAN.md M4), not guessed.
+A single threshold cannot reach the ≥80% paraphrase hit rate without false hits on
+out-of-domain queries; the margin and the anchors separate them where raw
+similarity cannot (ADR-013, ADR-020; calibration tables in `reports/README.md` §C).
+
+The cache is consulted **only when no `siis_response` is supplied**. With reference
+text, the article decides (ADR-019): a battery complaint sent with a battery
+article must never get a Display plan because its wording resembled one.
+
+A complaint naming several problems ("…cracked. Also, every tap lags") is split at
+explicit problem boundaries and each clause is looked up with the same rule; every
+distinct plan found is returned, first-mentioned first (ADR-021, §9.3).
 
 ---
 
@@ -290,9 +298,9 @@ category_rank: auto(0) < manual(1) < critical(2)
 
 ### 9.3 Multi-goal policy
 
-`contexts` is `List[Goal]`. Policy: **one Goal per distinct matched SIIS document**, sorted by `score` descending.
+`contexts` is `List[Goal]`. Policy: **one Goal per distinct matched plan**, in the order the complaint mentions the problems (ADR-021). Implemented only on the hot path: a cold plan derives from one supplied article.
 
-Rationale from the data: `input.txt` row 17 bundles three symptoms (cracked at fold / touch dead in places / can barely see) that share one root cause and resolve to one SIIS document (*Cracked or bleeding screen*), so it yields **one** Goal. Multiple Goals are emitted only when retrieval genuinely matches separate documents above threshold. Splitting per symptom would emit near-duplicate plans from one source and read as fragmentation.
+Rationale from the data: `input.txt` row 17 bundles three symptoms (cracked at fold / touch dead in places / can barely see) that share one root cause and resolve to one SIIS document (*Cracked or bleeding screen*), so it yields **one** Goal. So the complaint is split only at explicit problem boundaries — sentence ends, "also", "plus", ", and the/my" — never at a bare "and", and each clause must pass the full acceptance rule including the out-of-scope check. Measured: 0 extra plans on 53 single-problem held-out paraphrases; both plans returned for 100% of 340 joined pairs of supplied complaints (`reports/multi_intent.txt`). A second problem no plan covers is dropped rather than guessed.
 
 ### 9.4 `score`
 
@@ -323,9 +331,11 @@ Full gate list with severities: `DATA_CONTRACT.md`.
 
 | path | condition | `cache_hit` | `cost_usd` | target P95 |
 |---|---|---|---|---|
-| Hot | cosine ≥ `TAU_HIT` | `true` | `0.0` | ≤ 300 ms |
-| Cold | miss **and** `siis_response` present | `false` | tracked | ≤ 8000 ms |
-| Fallback `no_siis_context` | miss **and** no `siis_response` | `false` | `0.0` | ≤ 300 ms |
+| Hot | no `siis_response`, cache hit (one plan per problem) | `true` | `0.0` | ≤ 300 ms |
+| Known article | `siis_response` is a library article, as sent or reformatted | `true` | `0.0` | ≤ 300 ms |
+| Repeated article | `siis_response` the cold path has already planned | `true` | `0.0` | ≤ 300 ms |
+| Cold | `siis_response` is an unseen article | `false` | tracked | ≤ 8000 ms |
+| Fallback `no_siis_context` | no `siis_response` and no plan in scope | `false` | `0.0` | ≤ 300 ms |
 | Fallback `no_match` | pipeline yields zero valid actions | `false` | tracked | — |
 
 Both fallbacks return `{"contexts": []}` with the reason in `meta.fallback` (PDF §4.2.3).
@@ -373,7 +383,7 @@ The margin is why §7 emits indices instead of prose. Under naive full-text gene
 | generation | 84–500 tok (mean 272) at ~60–105 tok/s under the JSON grammar, varying with GPU state → 1–5 s; the 500-token cap sets the tail |
 | deeplink resolution | ~0.2 s per plan with probes batch-encoded; it was ~1 s at one encoder call (~70 ms) per probe |
 | HTTP to Ollama | ~5 ms with one pooled client; it was ~3 s per request on Windows with a client per call and `localhost` → IPv6 fallback |
-| **end to end** | **P50 3343 ms · P95 5345 ms** (N=33) |
+| **end to end** | **P50 3199 ms · P95 5215 ms** (N=33, final code: step-target probes and the merge fix included) |
 
 Two hard requirements follow:
 - `OLLAMA_KEEP_ALIVE=-1` — the 12.9 s load must never land on a request.
@@ -386,6 +396,7 @@ Two hard requirements follow:
 | source of nondeterminism | mitigation |
 |---|---|
 | LLM sampling | `temperature: 0`, fixed `seed`, `top_k: 1` |
+| Model server prompt cache (4 of 11 articles differed once cached, `reports/determinism.txt`) | the first validated plan for an article is kept and returned for every later request with it (ADR-019) |
 | Hot path | frozen plan library — byte-identical by construction |
 | Embedding drift | pinned model revision, vendored weights, `inference_mode` |
 | Dict/set iteration | explicit sorts everywhere; no `set` in ordering paths |

@@ -1,0 +1,8 @@
+# python scripts/eval_cache.py --no-ood
+# exit=0  elapsed=21.2s
+
+set=calibration  tau=0.7 high=0.8 margin=0.04  out-of-scope anchors=off  held-out n=26 (0 leaked)  negatives n=12
+  hit rate          : 22/26 = 84.6%   (target >= 80%)
+  correct routing   : 21/26 = 80.8%
+  wrong-plan hits   : 1
+  FALSE hits on OOD : 1/12 = 8.3%  (target 0%)

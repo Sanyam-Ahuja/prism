@@ -15,7 +15,7 @@ sys.path.insert(0, ".")
 
 import api.main as m
 from api.main import app
-from validators.gates import g0_no_urls
+from validators.gates import blocking, g0_no_urls, validate_envelope
 
 
 @pytest.fixture(scope="module")
@@ -91,14 +91,14 @@ def test_response_is_bare_json(client):
 # -------------------------------------------------------------- error boundary
 def test_internal_error_still_returns_json_envelope(client):
     """Regression: this previously propagated uncaught and returned a 500 body."""
-    orig = m._state["cache"].lookup
-    m._state["cache"].lookup = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
+    orig = m._state["cache"].lookup_all
+    m._state["cache"].lookup_all = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
     try:
         r = client.post("/v1/troubleshoot", json={"query": "screen blank"})
         d = _is_envelope(r.text)               # the assertion that matters
         assert d["meta"]["fallback"] == "no_match"
     finally:
-        m._state["cache"].lookup = orig
+        m._state["cache"].lookup_all = orig
 
 
 def test_cold_path_failure_degrades_to_no_match(client):
@@ -149,6 +149,92 @@ def test_oversized_query_is_rejected(client):
 
 def test_empty_query_is_rejected(client):
     assert client.post("/v1/troubleshoot", json={"query": ""}).status_code == 422
+
+
+# ------------------------------------------------------ articles (ADR-019)
+def _library_article(doc_prefix):
+    rows = json.load(open("data/siis_responses.json", encoding="utf-8"))["responses"]
+    return next(r["siis_response"] for r in rows if r["siis_response"]["title"].startswith(doc_prefix))
+
+
+def _cold_stub(calls):
+    """A cold path that records its calls and returns a valid plan."""
+    plan = next(p for p in m._state["cache"].plans.values() if p["doc"].startswith("Touchscreen"))
+
+    def run(query, siis):
+        calls.append(query)
+        return {"contexts": [dict(plan["plan"], score=0.78)], "variations": plan["query_variations"],
+                "cost_usd": 0.0, "tokens": {"prompt": 600, "completion": 270}}
+    return run
+
+
+def test_known_article_gets_its_compiled_plan_whatever_the_query(client):
+    """PDF 4.2.3: with reference text supplied, the plan derives from that text."""
+    cold, calls = m._state["cold"], []
+    orig, cold.run = cold.run, _cold_stub(calls)
+    try:
+        body = {"query": "my battery drains really fast",
+                "siis_response": _library_article("Blank or black display")}
+        d = _is_envelope(client.post("/v1/troubleshoot", json=body).text)
+        assert calls == []
+        assert d["meta"]["cache_hit"] is True
+        assert [c["title"] for c in d["response"]["contexts"]] == ["Blank screen display"]
+        # The same article as a bare string, reflowed: still the same document.
+        body["siis_response"] = "  " + body["siis_response"]["content"].replace(" ", "\n", 3)
+        d = _is_envelope(client.post("/v1/troubleshoot", json=body).text)
+        assert calls == [] and d["response"]["contexts"][0]["title"] == "Blank screen display"
+    finally:
+        cold.run = orig
+
+
+def test_repeated_article_gets_the_same_plan_without_the_model(client):
+    """PDF 6.1: the model's prompt cache made 4 of 11 repeats differ."""
+    cold, calls = m._state["cold"], []
+    orig, cold.run = cold.run, _cold_stub(calls)
+    article = "## Steps\nOpen Settings.\nTap Display.\nTap Touch sensitivity. (test_repeated_article)"
+    try:
+        first = _is_envelope(client.post("/v1/troubleshoot", json={
+            "query": "taps register late", "siis_response": article}).text)
+        again = _is_envelope(client.post("/v1/troubleshoot", json={
+            "query": "the touchscreen lags", "siis_response": article}).text)
+        assert calls == ["taps register late"]
+        assert first["meta"]["cache_hit"] is False and again["meta"]["cache_hit"] is True
+        assert again["response"]["contexts"] == first["response"]["contexts"]
+        assert again["meta"]["tokens"] == {"prompt": 0, "completion": 0}
+    finally:
+        cold.run = orig
+
+
+def test_article_outranks_a_resembling_query(client):
+    """A complaint that resembles a cached plan must not override its own article."""
+    cold, calls = m._state["cold"], []
+    orig, cold.run = cold.run, _cold_stub(calls)
+    try:
+        client.post("/v1/troubleshoot", json={
+            "query": "my galaxy s22 touchscreen is laggy and delayed",
+            "siis_response": "## Battery\nOpen Settings.\nTap Battery. (test_article_outranks)"})
+        assert calls == ["my galaxy s22 touchscreen is laggy and delayed"]
+    finally:
+        cold.run = orig
+
+
+# --------------------------------------------- cache scope and multi-intent
+def test_out_of_scope_complaint_falls_back(client):
+    """PDF section 1's own example used to hit the touchscreen plan (ADR-020)."""
+    d = _is_envelope(client.post("/v1/troubleshoot",
+                                 json={"query": "My phone got slow after the update"}).text)
+    assert d["response"]["contexts"] == []
+    assert d["meta"]["fallback"] == "no_siis_context"
+
+
+def test_two_problems_get_two_plans(client):
+    """ADR-021: one plan per separate problem, first-mentioned first."""
+    q = ("My Galaxy phone's screen is completely cracked, it's a total crack and I can't use the device. "
+         "Also, my Galaxy S22 screen inputs are delayed and the touch responsiveness is laggy.")
+    d = _is_envelope(client.post("/v1/troubleshoot", json={"query": q}).text)
+    assert [c["title"] for c in d["response"]["contexts"]] == ["Cracked screen damage",
+                                                               "Touch response delay"]
+    assert blocking(validate_envelope(d, m._state["ctx"])) == []
 
 
 # ------------------------------------------------------------- URL hygiene

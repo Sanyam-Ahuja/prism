@@ -18,6 +18,14 @@
       "expect": "hit"
     },
     {
+      "id": "two",
+      "label": "Two problems",
+      "shows": "Multi-intent: one complaint naming two problems gets one plan for each",
+      "query": "My screen got cracked when I dropped it. Also, every tap takes ages to register.",
+      "article": null,
+      "expect": "hit"
+    },
+    {
       "id": "cold",
       "label": "Never-seen issue",
       "shows": "Cold path: a new domain plus its article, planned live by a 1.5B local model",

@@ -158,18 +158,33 @@ def order_actions(actions: list[dict]) -> list[dict]:
 
 
 def merge_duplicate_screens(actions: list[dict]) -> list[dict]:
-    """G12: one action = one screen. Merge actions sharing a resolved deeplink."""
+    """G12: one action = one screen. Merge actions sharing a resolved deeplink.
+
+    Steps on the shared screen join that screen's step group, so the screen
+    appears once, with one deeplink; appending a second group with the same
+    deeplink tripped G12 inside the merged action. The merged action keeps the
+    more disruptive category, so a reset can never be pulled forward into an
+    auto action by sharing its screen.
+    """
     from engine.deeplink import DUMMY
+
+    def uri(sg):
+        return (sg.get("actionableDeeplink") or {}).get("deeplink")
+
     seen: dict[str, dict] = {}
     out: list[dict] = []
     for a in actions:
-        uris = [
-            (sg.get("actionableDeeplink") or {}).get("deeplink")
-            for sg in a.get("stepGroups", [])
-        ]
-        key = next((u for u in uris if u and u != DUMMY), None)
+        key = next((u for u in map(uri, a.get("stepGroups", [])) if u and u != DUMMY), None)
         if key and key in seen:
-            seen[key]["stepGroups"].extend(a.get("stepGroups", []))
+            kept = seen[key]
+            for sg in a.get("stepGroups", []):
+                same = next((g for g in kept["stepGroups"] if uri(sg) and uri(g) == uri(sg)), None)
+                if same is None:
+                    kept["stepGroups"].append(sg)
+                else:
+                    same["steps"].extend(s for s in sg["steps"] if s not in same["steps"])
+            if CATEGORY_RANK.get(a.get("category"), 1) > CATEGORY_RANK.get(kept.get("category"), 1):
+                kept["category"] = a["category"]
             continue
         if key:
             seen[key] = a

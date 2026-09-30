@@ -333,20 +333,27 @@ the same overhead and would have hidden the differences between them:
 **Decision.** `qwen2.5:1.5b` (Q4_K_M): the smallest model that passes every gate
 on every document, with the best step accuracy and the most latency headroom.
 
-**Re-measured on the final code** (after ADR-018; full table in `reports/README.md`
-§E): the decision holds. `qwen2.5:1.5b` P95 5223 ms, 33/33, step accuracy 2.97.
-`qwen2.5:3b` now passes 33/33 — the grounding check removed the copied screens
-that had collided under G12 — but stays slower (P95 6434 ms) with lower step
-accuracy (2.75). `llama3.2:3b` (P95 8486 ms) and `gemma3:4b` (P95 10061 ms) miss
-the budget; `gemma3:1b` returns no plan for 3 of 11 documents.
+**Re-measured on the final code** (after ADR-018 to ADR-022, all seven candidates
+in one run; full table in `reports/README.md` §E): the decision holds.
+`qwen2.5:1.5b` has the fastest median (3326 ms; P95 5473 ms), 33/33 plans valid and
+the best step accuracy (2.97). `qwen2.5:3b` passes 33/33 but is slower (P95 6514
+ms) with lower step accuracy (2.75). `llama3.2:3b` (P95 8168 ms) and `gemma3:4b`
+(P95 10108 ms) miss the budget; `gemma3:1b` returns no plan for 3 of 11 documents.
+
+**Is a 1B model enough? No.** `llama3.2:1b` was measured at Ollama's default 8-bit
+quantization and at 4-bit, like-for-like with the 4-bit `qwen2.5:1.5b`. The 8-bit
+build is slower (P95 6284 ms). The 4-bit build has the lowest P95 of all (4770 ms)
+but a slower median (3634 ms) because it writes 37% more tokens, lower step
+accuracy (2.87), treats only 15 of its 72 actions as settings changes, and the
+guard had to replace 63 of its 72 action names.
 
 **Consequences.**
 - The cold path has real headroom under the 8 s budget on a laptop GPU; the
-  official figure is `docs/metrics.md` §3 (P95 5345 ms).
+  official figure is `docs/metrics.md` §3 (P95 5215 ms).
 - **Cost:** weak deeplink coverage. Before ADR-018 the 23% here was inflated by
-  copied example screens (only 20% agreed with the compiled plan); on the final
-  code it is 9%, with half agreeing. `qwen2.5:3b` links more precisely but the
-  guard replaces more of its names than it keeps actions.
+  copied example screens (only 20% agreed with the compiled plan); after it, 9%
+  with half agreeing; after ADR-022, 19% with three quarters agreeing. The 3B
+  models link more (`llama3.2:3b` 37%) at 1.4–1.5 s more per median request.
 - Gemma is "particularly encouraged" by the organizers (participant kit,
   `SUBMISSION.md`). On this hardware neither size works: `gemma3:1b` drops
   documents and `gemma3:4b` misses the budget. `gemma3:4b` names its actions best
@@ -406,6 +413,200 @@ The examples were doing real work; only their misuse needed stopping.
   troubleshooting for" or "…by lowering". Neither changes compiled plans (the
   byte-for-byte reproducibility test passes).
 
+---
+
+## ADR-019 — With reference text supplied, the article decides
+
+**Status:** accepted · **Date:** 2026-09-30 · **Drives:** PDF §4.2.3, §6.1, C9
+
+**Context.** Two defects shared one cause: the API looked the query up in the
+semantic cache first, even when the caller supplied `siis_response`.
+- A complaint that resembled a cached Display plan got that plan and the
+  supplied article was ignored — "My phone got slow after the update" sent with a
+  performance article would have returned the touchscreen plan. PDF §4.2.3 says
+  plans "must derive purely from provided reference text", and the hidden set is
+  expected to span Battery, Camera and Performance (M-Q6): exactly the complaints
+  most likely to arrive with their own article.
+- The same article could get a different plan on a repeat: once Ollama had cached
+  an article's prompt, 4 of 11 articles produced a different plan
+  (`reports/determinism.txt`), against PDF §6.1's consistent plans for identical
+  inputs.
+
+**Decision.** When `siis_response` is supplied (`engine/articles.py`):
+1. A library article — exact after whitespace normalisation, or ≥ 0.9 token-set
+   overlap, i.e. the same article reformatted — gets its compiled plan, with no
+   model call, whatever the query says.
+2. An article the cold path has planned before gets the plan it got the first
+   time. The first validated plan is kept (first writer wins under concurrency),
+   in a 256-entry LRU.
+3. Only an unseen article reaches the model.
+
+Without `siis_response`, the semantic cache answers as before (ADR-020, ADR-021).
+`PRISM_ARTICLE_CACHE=0` switches 1–2 off; the HTTP stress test uses it to time the
+model path on the library's own articles.
+
+**Consequences.**
+- Repeats are identical by construction. The model's own nondeterminism remains
+  for the first request per article after a restart.
+- A request carrying a library article is answered in 0.4 ms (P95, in-process,
+  `reports/bench.txt`) instead of taking the semantic path.
+- An unseen article now always takes the cold path (~5 s) even when the query
+  would have hit the cache. That is the point: the answer must come from the
+  text the caller sent.
+- This is not the PDF's "write to cache": the store is keyed by the exact article,
+  so a plan is only ever served for the reference text it was built from, never
+  for another caller's similar query — the cross-user risk that keeps semantic
+  write-back unimplemented (`docs/metrics.md` §6).
+
+---
+
+## ADR-020 — Out-of-scope anchors in the semantic cache
+
+**Status:** accepted · **Date:** 2026-09-30 · **Drives:** C8, PDF §6.2
+
+**Context.** All 11 plans are Display, and the cache matched some out-of-scope
+complaints to the nearest Display plan: "My phone got slow after the update" (PDF
+§1) hit the touchscreen plan at similarity 0.725, as did 1 of the 12 calibration
+negatives. Out-of-domain complaints sit in the same similarity band as genuine
+paraphrases, so raising thresholds trades hit rate for precision (a single
+threshold of 0.78 keeps false hits at 0 but drops the hit rate to 76.9%).
+
+**Decision.** 36 generic topic statements for problems no plan covers (battery,
+performance, camera, connectivity, audio, apps; `build/out_of_scope.json`) are
+embedded at build time as cache rows that map to no plan. A query at least as close
+to an anchor as to the best plan seed is out of scope. No threshold changed.
+
+**Evaluation** (`reports/cache_*.txt`). The calibration set is the 26
+paraphrases and 12 negatives the thresholds were tuned on. The test set was
+written afterwards and never used to tune: 27 new paraphrases and 38 out-of-scope
+complaints, including the PDF's own.
+
+| set | anchors | hit rate | correct routing | false hits (out of scope) |
+|---|---|---|---|---|
+| calibration | off | 84.6% | 80.8% | 1/12 |
+| calibration | **on** | **84.6%** | **80.8%** | **0/12** |
+| test | off | 100% | 92.6% | 2/38 |
+| test | **on** | **100%** | **92.6%** | **1/38** |
+
+**Consequences.**
+- The PDF's "My phone got slow after the update" now falls back to
+  `no_siis_context` instead of returning the touchscreen plan.
+- It generalises by topic, not by wording. The remaining test false hit, "Always
+  On Display doesn't show the clock anymore" → the camera-flicker plan, is a topic
+  deliberately left out of the anchors so the test would show that case.
+- The same team wrote the anchors and the test set. The first anchor draft shared
+  distinctive phrases with test items ("camera failed", "hot while charging",
+  "autocorrect", "slow after a software update"); it was rewritten at topic level
+  before the evaluation ran.
+- Anchors are data: when plans for a new domain are added, its anchors come out.
+
+---
+
+## ADR-021 — One plan per problem the complaint names
+
+**Status:** accepted · **Date:** 2026-09-30 · **Implements:** ARCHITECTURE §9.3 · **Drives:** Appendix C §6
+
+**Context.** `contexts` is a list and §9.3 specified one Goal per matched document,
+but the API returned at most one plan. Two supplied complaints about different
+documents, joined into one, returned the first-mentioned problem's plan 95.6% of
+the time and never both.
+
+**Decision.** `PlanCache.lookup_all` splits the complaint at explicit problem
+boundaries — sentence ends, "also", "plus", "as well as", "additionally", ", and
+the/my/its" — never at a bare "and", which joins the symptoms of one problem
+throughout the supplied complaints. Clauses under three words are ignored. The
+whole complaint and every clause are encoded in one batch and each must pass the
+full acceptance rule, out-of-scope check included. Distinct plans are returned
+first-mentioned first, at most three.
+
+**Evaluation** (`reports/multi_intent.txt`):
+
+| complaints | n | both problems answered |
+|---|---|---|
+| two supplied complaints joined | 340 | **100%** (was 0%) |
+| two held-out test paraphrases joined | 648 | **85.0%**; 549 of 552 (99.5%) where each half routes correctly on its own |
+| a supplied complaint + a problem no plan covers | 60 | the known plan only, 100%; no wrong extra plan |
+| single-problem held-out paraphrases | 53 | 0 given an extra plan |
+
+The paraphrase-pair failures come from the two paraphrases the cache already
+misroutes on their own ("…can't move my data with smart switch" → the Smart
+Switch QR plan instead of *Some things to check first*), not from the pairing.
+
+**Consequences.**
+- Hot-path cost: one batched encode of the complaint and its clauses. Paraphrase
+  P95 is unchanged at 28.6 ms in-process.
+- A second problem with no plan is still dropped without notice. Saying so would
+  need a new `meta` key beyond Appendix B's (M-Q3).
+- The cold path still returns one plan: it derives from one article.
+
+---
+
+## ADR-022 — Probe the screen the steps themselves open
+
+**Status:** accepted · **Date:** 2026-09-30 · **Drives:** Appendix C §1 (auto actions with a deeplink), PDF §6.2
+
+**Context.** 3–9% of cold-path auto actions linked a specific screen, against 69%
+for compiled plans with the same resolver. The 1.5B model's screen descriptors
+rarely use catalog wording, and the grounding check (ADR-018) rejects the ones it
+copies. But the steps it selects usually spell the screen out: "Go to Settings,
+tap Display, and then tap Navigation bar", "tap the switch next to Touch
+sensitivity".
+
+**Decision.** `engine/cold.py::step_target` takes the deepest specific UI label the
+steps navigate to and adds it as one more resolver probe. It is phrased in catalog
+register ("open the Navigation bar settings page"), while a switch keeps its verb
+("enable Touch sensitivity"). Menus every path crosses (Settings, Display, Apps…)
+and dialog buttons (Delete all, OK…) never count; nor does "select", which picks
+an option on a screen ("Select Buttons"). The most confident probe still wins,
+under the same threshold. Taken from the source text, so it is always grounded.
+
+Phrasing decided whether it worked: "open Wi-Fi" matched the Wi-Fi
+*notifications* page, "open the Wi-Fi settings page" the Wi-Fi page. Checked
+offline against the compiled plans' links, the final form agrees on 10 actions and
+introduces no wrong link.
+
+**Found on the way: a labelling error of ours.** For *Enable Multi Window Gestures*
+the step probe returned DL-0270 "Enable Swipe for split screen" at full confidence
+— the exact switch the steps turn on. Our ground truth said that screen was absent
+from the catalog and had accepted DL-0168 (multi window for all apps) at 1.0. The
+build descriptor and the label are corrected: compiled deeplink relevance
+1.67 → **1.78** / 2.0.
+
+**A regression caught before shipping.** More links meant two actions in one plan
+resolving to the same screen more often, and `merge_duplicate_screens` merged them
+by appending a second step group with the same deeplink — which G12 rejects. 3 of
+33 plans failed their gates. The merge now joins the steps into the screen's one
+group and keeps the more disruptive category (so a reset is never pulled forward
+into an auto action); compiled plans are unchanged.
+
+**Consequences** (`reports/compare_models.json`, `qwen2.5:1.5b`, N=33): auto
+actions linking a specific screen **19%** (12 of 63; was 6%), and **75%** of those
+links agree with the compiled plan for the same document (was 50%). Every plan
+still passes every gate (33/33), step accuracy is unchanged (2.97), and latency
+is within run-to-run noise. The larger models gain most: `llama3.2:3b` links 37%.
+Still far below the 69% of compiled plans, whose descriptors the build tier writes
+in catalog register.
+
+---
+
+## ADR-023 — The build embeds the deeplink catalog
+
+**Status:** accepted · **Date:** 2026-09-30 · **Drives:** PDF §2 (dependable cold-start handling)
+
+**Context.** Every API start embedded all 578 catalog entries on the CPU: 7.1 s of
+the 29.2 s from process launch to `/health` = ok.
+
+**Decision.** `scripts/compile_plans.py` saves the vectors to
+`artifacts/catalog_vectors.npy` with a fingerprint of the exact catalog text. The
+resolver uses them only if the fingerprint matches and one entry re-encoded at
+startup matches its stored vector (cosine ≥ 0.999); otherwise it re-embeds, so a
+changed catalog or encoder is never trusted stale
+(`test_build_time_catalog_vectors_are_used_only_when_current`).
+
+**Consequences.** Loading the vectors takes 0.5 s instead of 7.1 s, and process
+launch to `/health` = ok fell from 29.2 s to **21.7 s** over HTTP
+(`reports/stress_api.txt`, `reports/verify_startup_and_steps.txt`). What remains
+is loading the encoder itself (18.8 s in the breakdown, torch import included).
 
 ---
 

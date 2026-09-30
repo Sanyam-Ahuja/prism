@@ -331,9 +331,9 @@
       "stepGroups": [
        {
         "actionableDeeplink": {
-         "deeplink": "bixby://masked/act/a70dd5e0ef",
-         "description": "Enables multi window for all apps via device Settings on the device.",
-         "message": "Enable Multi window for all apps",
+         "deeplink": "bixby://masked/act/6c0fd865eb",
+         "description": "Enables swipe for split screen via device Settings on the device.",
+         "message": "Enable Swipe for split screen",
          "originalType": "onURL"
         },
         "steps": [
@@ -342,8 +342,8 @@
         ],
         "validationDeeplink": {
          "condition": "equal",
-         "deeplink": "bixby://masked/val/41d70c5e6f",
-         "key": "Multi window for all apps",
+         "deeplink": "bixby://masked/val/b1df5728e1",
+         "key": "Swipe for split screen",
          "resultType": "boolean",
          "value": "True"
         }

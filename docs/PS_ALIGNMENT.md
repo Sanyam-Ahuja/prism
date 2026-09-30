@@ -18,9 +18,9 @@ number — not an assertion.
 | 1 | Enforce length, phrasing, zero-leak constraints | ✅ | `validators/gates.py` (G1–G6), `validators/scrub.py` (G0) — programmatic, not prompt-only |
 | 2 | Deeplink Mapping: match screens to catalog via semantic + keyword | ✅ | `engine/deeplink.py` — BM25 + bge-small dense, RRF fusion |
 | 2 | Sequencing: non-invasive first → critical last | ✅ | `engine/assemble.py::order_actions`; gate G14; `test_ordering_places_critical_last` |
-| 3 | Fast-Path cache: hit ≤300 ms without LLM | ✅ | `engine/cache.py`; **P95 28.6 ms** paraphrase / 0.6 ms exact in-process (29.6 / 17.9 ms over HTTP); no model invoked on the hot path |
-| 3 | Cache miss: "validate schema, **write to cache**" | ❌ | Cold plans are validated but never written back — deliberately, pending a decision: a shared semantic cache would serve a plan built from one caller's `siis_response` to other callers (see open gaps) |
-| 3 | Handle unseen paraphrases semantically | ✅ | **84.6%** on 26 held-out paraphrases |
+| 3 | Fast-Path cache: hit ≤300 ms without LLM | ✅ | `engine/cache.py`; **P95 28.6 ms** paraphrase / 0.3 ms exact in-process (30.9 / 7.9 ms over HTTP); no model invoked on the hot path |
+| 3 | Cache miss: "validate schema, **write to cache**" | ⚠️ | Each validated cold plan is kept under its article (ADR-019): a repeat of that article gets it without the model. Writing it into the *semantic* cache, where other callers' similar queries would get it, is deliberately not built — a plan built from one caller's `siis_response` would be served to others (see open gaps) |
+| 3 | Handle unseen paraphrases semantically | ✅ | **84.6%** on the 26 calibration paraphrases · **100%** (92.6% to the right plan) on 27 test paraphrases written afterwards |
 | 4 | REST service with operational metadata | ✅ | `api/main.py`; `meta` carries latency, cache_hit, model, cost, tokens, fallback |
 
 ---
@@ -58,7 +58,7 @@ number — not an assertion.
 | Requirement | Status | Evidence |
 |---|---|---|
 | `POST /v1/troubleshoot` with `{query, siis_response}` | ✅ | `api/main.py`; `siis_response` accepted as raw string **or** object |
-| `siis_response` omitted → semantic lookup against pre-warmed cache | ✅ | Cache consulted first on every request |
+| `siis_response` omitted → semantic lookup against pre-warmed cache | ✅ | Without `siis_response` the semantic cache answers, one plan per problem named (ADR-021). With it, the article decides (ADR-019) — the plan must derive from the provided text (§4.2.3) |
 | `GET /health` → HTTP 200 `{"status": "ok"}` | ✅ | Verified: `http_status=200`, `status == 'ok'` |
 | ...when caching layer, model connections and vector indexes are initialized | ✅ | Gated on all four subsystems; returns **503** until ready |
 
@@ -74,7 +74,7 @@ number — not an assertion.
 | Zero leakage | 0 | **0** | ✅ |
 | Deterministic execution — identical inputs | consistent | byte-identical ×5 | ✅ |
 | Deterministic execution — *semantically* identical | consistent | S22 ≡ S24 Ultra → same plan | ✅ |
-| Deterministic execution — cold path | consistent | stable back-to-back and interleaved, but 4 of 11 plans change once the server has cached their prompt (`reports/determinism.txt`) | ⚠️ |
+| Deterministic execution — cold path | consistent | the first validated plan for an article is returned for every repeat of it (ADR-019, `test_repeated_article_gets_the_same_plan_without_the_model`). Underneath, the model still gives 4 of 11 articles a different plan once its server has cached their prompt (`reports/determinism.txt`), which now only affects the first request per article after a restart | ✅ |
 
 ### 6.2 Information Retrieval & Deeplink Precision
 
@@ -82,15 +82,16 @@ number — not an assertion.
 |---|---|---|---|
 | Screen resolution accuracy (exact screen, not parent menu) | — | **94.7%** precision@1 (95.3% overall) on 43 Display labels · **100%** on 26 Battery/Camera/Performance labels | ✅ |
 | ...on free-form descriptors | — | 30% overall | ⚠️ documented limitation |
-| Semantic paraphrase hit rate | ≥80% | **84.6%** (26 held-out, 0 leaked) | ✅ |
+| Semantic paraphrase hit rate | ≥80% | **84.6%** (26 calibration paraphrases, 0 leaked) · **100%** (27 test paraphrases, 92.6% to the right plan) | ✅ |
+| Out-of-scope complaints kept out of the cache | — | false hits 0/12 calibration · 1/38 test, with the out-of-scope anchors (ADR-020); 1/12 and 2/38 without | ✅ |
 | Plan hierarchy by disruption | — | auto → manual → critical, G14-enforced | ✅ |
 
 ### 6.3 Latency & Resource Efficiency
 
 | Criterion | Target | Measured | Status |
 |---|---|---|---|
-| Fast-path P95 | ≤300 ms | **28.6 ms** (exact: 0.6 ms), sequential · 217 ms with 8 concurrent clients | ✅ |
-| Cold-path P95 | ≤8 s | **5345 ms** (`qwen2.5:1.5b`, N=33; 5263 ms over HTTP) | ✅ |
+| Fast-path P95 | ≤300 ms | **28.6 ms** (exact: 0.3 ms), sequential · 232 ms with 8 concurrent clients | ✅ |
+| Cold-path P95 | ≤8 s | **5215 ms** (`qwen2.5:1.5b`, N=33; 5413 ms over HTTP) | ✅ |
 | Cost predictability — inference cost/query | tracked | `meta.cost_usd` = $0.00 (local) | ✅ |
 | Cost predictability — **token utilization** | tracked | `meta.tokens.{prompt,completion}` | ✅ *(added during this audit)* |
 
@@ -115,7 +116,7 @@ number — not an assertion.
 | 1 — Foundation & validation harness | ✅ | Validators built **first**; 37 tests |
 | 2 — Dual retrieval (BM25 + dense), screen resolution, ordering | ✅ | All three present |
 | 3 — Semantic normalization, persistent cache, latency benchmark | ✅ | 130 pre-computed vectors, benchmarked |
-| 4 — REST endpoints, error boundaries, fallbacks, stress tests | ✅ | `scripts/stress_api.py`: 325/325 schema-valid responses over HTTP, cold start 29.2 s, malformed input answered with JSON 422; container cold start 17.3 s (measured earlier on Linux) |
+| 4 — REST endpoints, error boundaries, fallbacks, stress tests | ✅ | `scripts/stress_api.py`: 325/325 schema-valid responses over HTTP, cold start 21.7 s (29.2 s before ADR-023), malformed input answered with JSON 422; container cold start 17.3 s (measured earlier on Linux) |
 
 ---
 
@@ -137,26 +138,29 @@ refreshed 2026-09-30 after the extractor change (ADR-017).
 | # | Gap | PS reference | Severity |
 |---|---|---|---|
 | 1 | **Plan coverage is Display-only.** The pipeline is domain-independent — Stage 3 scores 100% on a 26-label Battery/Camera/Performance set and a probe corpus drives all three through to gate-passing plans — but no *plans* exist for domains whose SIIS text we were never given | §3, Appendix C §2 | **High**, and partly not ours (M-Q4) |
-| 2 | **Cold plans are never written back to the cache.** The PDF's miss path ends "write to cache". A shared semantic cache would serve a plan built from one caller's `siis_response` to other callers' similar queries, so this needs a decision, not just code | §2 [3] | **High** — needs a decision |
-| 3 | **Cold-path deeplink coverage is 3–9%** (auto actions with a specific screen) against 69% for compiled plans, half of them agreeing with the compiled plan. The 1.5B extractor rarely names a specific screen, and the grounding check refuses the ones it copies from the prompt (ADR-018); the resolver is not the bottleneck | Appendix C §1, §6.2 | Medium |
-| 4 | **Cold-path output depends on the server's prompt cache.** 4 of 11 documents yield a different plan once their exact prompt is cached (`reports/determinism.txt`). Fix identified, not applied: memoize the plan by a hash of the SIIS text, which is all the extractor sees | §6.1 | Medium |
-| 5 | **Deeplink relevance 1.67 / 2.0.** 3 of 13 auto actions land on the right feature area but not the exact screen | §6.2, Appendix C §2 | Medium |
+| 2 | **Cold plans are not written back to the *semantic* cache.** They are kept per article (ADR-019), so the same reference text always gets the same plan, but the PDF's miss path ends "write to cache": a shared semantic cache would serve a plan built from one caller's `siis_response` to other callers' similar queries, so that part needs a decision, not just code | §2 [3] | **High** — needs a decision |
+| 3 | **Cold-path deeplink coverage is 19%** (12 of 63 auto actions link a specific screen, 75% of them agreeing with the compiled plan; 6% before the step-target probe, ADR-022) against 69% for compiled plans. The 1.5B extractor rarely names a specific screen, and the grounding check refuses the ones it copies from the prompt (ADR-018) | Appendix C §1, §6.2 | Medium |
+| 5 | **Deeplink relevance 1.78 / 2.0.** 2 of 13 compiled auto actions land on the right feature area but not the exact screen (Edge panels: the catalog has only enable/disable entries) | §6.2, Appendix C §2 | Low |
 | 6 | **TV entries are not filtered.** "enable adaptive brightness" resolves to DL-0498, a TV Settings entry; the appliance filter misses the catalog's 18 TV entries | §6.2 | Medium |
 | 7 | **31% of auto actions use `dummy_positive`.** Driven by genuine catalog gaps (no safe mode, auto-rotate, Smart View, aspect ratio, clear-app-cache, Smart Switch), not by guessing | §3, Appendix C §1 | Medium — data-bound |
-| 8 | **Hot path shares the CPU:** 8-client P95 217 ms on a quiet machine, 320 ms in a busier run with no code change; sequential P95 is 29 ms | §6.3 | Low |
+| 8 | **Hot path shares the CPU:** 8-client P95 217 ms on a quiet machine, 232 ms in the final run, 320 ms in a busier run with no code change; sequential P95 is 29 ms | §6.3 | Low |
 | 9 | Free-form descriptor resolution 30% at the shipped threshold | §6.2 | Low — Stage 3 receives normalized descriptors |
 | 10 | `queries.json` and 4 of 5 `samples/` never supplied | §3 | ➖ Not ours — M-Q4 |
 | 11 | `sample_output.json` contradicts §4.1 (9 and 12-word descriptions) | §4.1 | ➖ Spec conflict — M-Q2 |
 | 12 | `meta` carries `tokens` beyond Appendix B's four keys | §6.3 vs Appendix B | ➖ Deliberate, switchable — ADR-016, M-Q3 |
-| 13 | **Multi-intent complaints get one plan.** Two supplied complaints joined: the first-mentioned problem's plan comes back 95.6% of the time, never both; an uncovered second problem is dropped silently. The PDF's own "My phone got slow after the update" false-hits *Touchscreen issues* (similarity 0.725) instead of falling back (`reports/multi_intent.txt`) | §1, §6.2, Appendix C §6 | Medium |
+| 13 | **A second problem no plan covers is dropped without notice.** Complaints naming several known problems get one plan each (ADR-021), but "…and the battery dies fast" adds nothing and the response does not say so; saying it would need a `meta` key beyond Appendix B's (M-Q3) | Appendix C §6 | Low |
+| 14 | **Out-of-scope rejection generalises by topic, not wording.** A complaint on a topic outside `build/out_of_scope.json` relies on the thresholds alone: 1 of 38 test complaints ("Always On Display doesn't show the clock") still hits a plan (ADR-020) | §6.2 | Low |
 
 **Closed since the first audit:** the ablation Baseline is measured (re-measured
 with `qwen2.5:1.5b`: 2.3% catalog integrity when the model writes URIs, 60.5%
 precision@1 when it selects among candidates, against 95.3% for the shipped
 resolver); the container builds, runs offline and its cold start is measured at
 17.3 s; both Appendix C §2 judged scores are filled with an auditable rubric; the
-cold-path latency is re-measured on current code (P95 5345 ms, N=33) and the
-HTTP stress test is in place.
+cold-path latency is re-measured on current code and the HTTP stress test is in
+place. **2026-09-30:** a repeated article gets the identical plan (ADR-019, was
+gap 4); a complaint naming two known problems gets both plans (ADR-021); the PDF's
+own "My phone got slow after the update" falls back instead of hitting the
+touchscreen plan (ADR-020); startup no longer embeds the catalog (ADR-023).
 
 ---
 
@@ -182,8 +186,12 @@ HTTP stress test is in place.
 | 16 | Trimming left titles and descriptions ending mid-phrase ("Quick troubleshooting for", "…by lowering") | rehearsing the demo |
 | 17 | A URL typed into the complaint came back out: echoed in `query` on every path, and on the cold path copied into the generated `query_variations`, where the URL gate then discarded a valid plan while the `no_match` fallback still returned the link. FastAPI's default 422 body also echoed rejected input, links and all. Fixed: the complaint is stripped of links on input (only the link, not the sentence around it), and 422s no longer echo the payload | writing the Appendix C §6 edge cases |
 
+| 18 | With `siis_response` supplied, the API still looked the query up in the semantic cache first, so a complaint resembling a cached Display plan got that plan and the caller's own article was ignored (against §4.2.3). Fixed: the article decides (ADR-019) | measuring multi-intent complaints: the PDF's own "My phone got slow after the update" hit the touchscreen plan |
+| 19 | Our ground truth said the "Swipe for split screen" switch was not in the catalog and accepted a neighbouring entry at 1.0; DL-0270 is that exact switch. Descriptor and label corrected, deeplink relevance 1.67 → 1.78 | the step-target probe (ADR-022) returned DL-0270 at full confidence |
+| 20 | `merge_duplicate_screens` merged two actions sharing a screen by appending a second step group with the same deeplink, which G12 rejects. Latent until the step-target probe linked more actions: 3 of 33 cold plans then failed their gates. Fixed: steps join the screen's one group, and the merged action keeps the more disruptive category | the extractor comparison, before shipping |
+
 Most of these were found by *looking at output*, not by tests passing. The two
 worst — 4 and 5 — were introduced by me and hidden by a test with a side effect on
 the thing it verified.
 
-Test count: 31 → 63 → 68 → **72** (71 pass; 1 skips without the vendored encoder).
+Test count: 31 → 63 → 68 → 72 → **82** (81 pass; 1 skips without the vendored encoder).

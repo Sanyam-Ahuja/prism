@@ -27,9 +27,9 @@
     },
     {
       "action": "Enable Multi Window Gestures",
-      "expect": "DL-0168",
-      "score": 1,
-      "verified": "steps target the Swipe for split screen toggle, absent; DL-0168 is the adjacent multi-window toggle"
+      "expect": "DL-0270",
+      "score": 2,
+      "verified": "steps turn on the Swipe for split screen switch; DL-0270 'Enable Swipe for split screen' is that exact toggle. An earlier label called it absent and accepted DL-0168 (multi window for all apps) at 1.0; the cold path's step-target probe (ADR-022) found DL-0270 and exposed the error."
     },
     {
       "action": "Customize Edge Panel",

@@ -101,6 +101,22 @@ _GENERIC = {
 }
 _WORD = re.compile(r"[a-z]+")
 _STEP_HEADING = re.compile(r"^\s*(?:step\s*)?\d+\s*[:.)\-]\s*", re.I)
+
+# The screens the steps themselves navigate to: "tap Navigation bar", "the switch
+# next to Touch sensitivity", "Settings > Security and privacy > Screen lock".
+# SIIS text writes UI labels in sentence case, so a label starts with a capital.
+# "Select" is left out: it picks an option on a screen ("Select Buttons"), not
+# the screen itself.
+_NAV = re.compile(
+    r"\b(?P<verb>(?i:tap|open|go to|navigate to|turn on|turn off|enable|disable))\s+"
+    r"(?i:on\s+)?(?i:the\s+)?(?P<switch>(?i:switch(?:es)?\s+next\s+to\s+))?"
+    r"(?P<label>[A-Z][\w\-]*(?:\s+(?!(?:and|then|to|when|if|again|or|from|in|on|at|with|there)\b)[\w\-]+){0,4})")
+_PATH = re.compile(r"\bSettings\s*>\s*([^.,;]+)")
+# Menus every path passes through, and dialog buttons: never the target screen.
+_NAV_GENERIC = {"settings", "apps", "display", "connections", "advanced features",
+                "general management", "security and privacy", "device care", "all apps",
+                "delete all", "reset", "restart", "power off", "ok", "allow", "done",
+                "cancel", "confirm", "back", "home", "search", "edit"}
 # Honest names for an action whose own name was discarded and whose steps sit
 # under no heading of their own.
 _FALLBACK_NAME = {"auto": "Review Device Settings", "manual": "Check the Hardware",
@@ -122,6 +138,33 @@ def grounded(phrase: str, evidence: str) -> bool:
     """
     words = _content(phrase)
     return not words or bool(words & _content(evidence))
+
+
+def step_target(steps: list[str]) -> str | None:
+    """The deepest specific screen the steps navigate to, as a catalog-style probe.
+
+    The model often names a parent menu or nothing usable (3-9% of its auto
+    actions linked a specific screen), but the steps it selected usually spell
+    out the exact screen. Taken from the source text, so always grounded.
+
+    Written in catalog register, which is what resolves: "open Wi-Fi" matched
+    the Wi-Fi *notifications* page, "open the Wi-Fi settings page" the Wi-Fi
+    page. A switch keeps its verb: "enable Touch sensitivity" is the entry.
+    """
+    found = []
+    for s in steps:
+        hits = [(m.start(1) + i, "open", seg.strip())
+                for m in _PATH.finditer(s) for i, seg in enumerate(m.group(1).split(">"))]
+        for m in _NAV.finditer(s):
+            verb = m.group("verb").lower()
+            v = ("enable" if m.group("switch") or verb in ("turn on", "enable") else
+                 "disable" if verb in ("turn off", "disable") else "open")
+            hits.append((m.start(), v, m.group("label").strip()))
+        found += [(v, label) for _, v, label in sorted(hits)]
+    for verb, label in reversed(found):
+        if len(label) > 2 and label.lower() not in _NAV_GENERIC:
+            return f"open the {label} settings page" if verb == "open" else f"{verb} {label}"
+    return None
 
 
 def heading_name(section: str, title: str) -> str | None:
@@ -151,9 +194,12 @@ def salvage(raw: str) -> dict | None:
 
 
 class ColdPath:
-    def __init__(self, encoder=None, model: str = MODEL):
+    def __init__(self, encoder=None, model: str = MODEL,
+                 vectors: str | None = "artifacts/catalog_vectors.npy"):
         self.model = model
-        self.resolver = DeeplinkResolver("data/deeplinks.json", encoder=encoder)
+        # Catalog vectors from the build: embedding them here cost 7.1 s of startup.
+        self.resolver = DeeplinkResolver("data/deeplinks.json", encoder=encoder,
+                                         vectors=vectors)
         # One pooled client for the process. httpx.post() builds and discards a
         # client per call (~0.4 s of TLS-context setup, even for plain HTTP) and
         # reconnects every time; measured at ~3 s of each cold call on Windows.
@@ -188,20 +234,22 @@ class ColdPath:
             return sk, ptok, ctok
 
     @staticmethod
-    def _probes(name: str, screen: str) -> list[str]:
-        return [p for p in (name, screen, f"{name} {screen}".strip()) if p.strip()]
+    def _probes(name: str, screen: str, steps: list[str] = ()) -> list[str]:
+        probes = (name, screen, f"{name} {screen}".strip(), step_target(steps) or "")
+        return [p for p in dict.fromkeys(probes) if p.strip()]
 
-    def _best_screen(self, name: str, screen: str, qvecs=None):
+    def _best_screen(self, name: str, screen: str, qvecs=None, steps: list[str] = ()):
         """Resolve using the best of several descriptor spellings.
 
         Models reliably put the parent menu in `screen` ("display settings") and
         the specific feature in `name` ("enable touch sensitivity"). Parent-menu
         matching is the exact failure PDF section 6.2 penalises, so we probe the
-        name and the combination too and keep the most confident result rather
-        than trusting the model's field discipline.
+        name, the combination and the screen the steps themselves navigate to,
+        and keep the most confident result rather than trusting the model's
+        field discipline.
         """
         best = None
-        for probe in self._probes(name, screen):
+        for probe in self._probes(name, screen, steps):
             m = self.resolver.resolve(probe, tau=TAU_LINK, qv=(qvecs or {}).get(probe))
             if m.entry is None:
                 continue
@@ -267,7 +315,7 @@ class ColdPath:
         # function of the skeleton, so identical inputs still give identical plans.
         qvecs = self.resolver.encode_queries(
             [p for d in drafts.values() if d["category"] != "manual"
-             for p in self._probes(d["name"], d["screen"])])
+             for p in self._probes(d["name"], d["screen"], d["steps"])])
 
         actions = []
         for d in drafts.values():
@@ -275,7 +323,7 @@ class ColdPath:
                                                       d["category"], d["steps"])
             adl = vdl = None
             if category != "manual":
-                m = self._best_screen(name, screen, qvecs)
+                m = self._best_screen(name, screen, qvecs, steps)
                 if m is not None and m.entry is not None:
                     if m.entry["deeplink"] == DUMMY:
                         # A parent-menu screen ("settings") makes a meaningless

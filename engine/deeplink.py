@@ -11,7 +11,9 @@ separates them.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from typing import Optional
@@ -105,7 +107,8 @@ class Match:
 
 
 class DeeplinkResolver:
-    def __init__(self, path: str = "data/deeplinks.json", encoder=None):
+    def __init__(self, path: str = "data/deeplinks.json", encoder=None,
+                 vectors: Optional[str] = None):
         with open(path) as f:
             raw = json.load(f)["deeplinks"]
 
@@ -121,8 +124,47 @@ class DeeplinkResolver:
         self._dense = None
         if encoder is not None:
             import numpy as np
-            self._dense = encoder.encode(self.searchable, normalize_embeddings=True)
             self._np = np
+            if vectors:
+                self._dense = self._load_vectors(vectors)
+            if self._dense is None:
+                self._dense = encoder.encode(self.searchable, normalize_embeddings=True)
+
+    def fingerprint(self) -> str:
+        """Identifies the exact catalog text the dense vectors embed."""
+        h = hashlib.sha256()
+        for s in self.searchable:
+            h.update(s.encode("utf-8") + b"\n")
+        return h.hexdigest()
+
+    def save_vectors(self, path: str) -> None:
+        """Written at build time by scripts/compile_plans.py."""
+        import numpy as np
+        np.save(path, np.asarray(self._dense, dtype=np.float32))
+        with open(os.path.splitext(path)[0] + ".json", "w") as f:
+            json.dump({"fingerprint": self.fingerprint(), "rows": len(self.searchable)}, f)
+
+    def _load_vectors(self, path: str):
+        """Catalog vectors embedded at build time, or None to embed them now.
+
+        Embedding all 578 entries at startup took 7.1 s on CPU. The saved file is
+        used only if it embeds this exact catalog text, and one entry re-encoded
+        now must match it, so a changed catalog or encoder is recomputed rather
+        than trusted stale.
+        """
+        import numpy as np
+        try:
+            with open(os.path.splitext(path)[0] + ".json") as f:
+                meta = json.load(f)
+            vecs = np.load(path)
+        except (OSError, ValueError):
+            return None
+        if meta.get("fingerprint") != self.fingerprint() or len(vecs) != len(self.searchable):
+            return None
+        check = self.encoder.encode(self.searchable[:1], normalize_embeddings=True)[0]
+        if float(np.dot(check, vecs[0])) < 0.999:
+            return None
+        return vecs
 
     @staticmethod
     def _searchable(e: dict) -> str:

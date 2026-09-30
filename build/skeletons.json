@@ -321,7 +321,7 @@
           "benefit": "enable split screen swipe gestures",
           "stepGroups": [
             {
-              "screen": "enable multi window for all apps",
+              "screen": "enable swipe for split screen",
               "steps": [
                 8,
                 9

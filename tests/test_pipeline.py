@@ -130,6 +130,35 @@ def test_ordering_places_critical_last():
         ["auto", "auto", "manual", "critical"]
 
 
+def test_actions_sharing_a_screen_merge_into_one_group():
+    """G12: the merged screen appears once, and a reset is never pulled forward.
+
+    Appending the second action's group kept the same deeplink twice inside one
+    action, which G12 rejects; the cold path's step probes (ADR-022) made that
+    collision common enough to fail 3 of 33 plans.
+    """
+    from engine.assemble import merge_duplicate_screens
+    from validators.gates import g12_one_action_one_screen
+    link = {"deeplink": "bixby://masked/act/reset", "description": "d", "message": "m"}
+    acts = [
+        {"actionName": "Open Reset Options", "category": "auto",
+         "stepGroups": [{"steps": ["Tap General management.", "Tap Reset."],
+                         "actionableDeeplink": dict(link)}]},
+        {"actionName": "Clean the Screen", "category": "manual",
+         "stepGroups": [{"steps": ["Wipe the screen."], "actionableDeeplink": None}]},
+        {"actionName": "Perform Factory Data Reset", "category": "critical",
+         "stepGroups": [{"steps": ["Tap Reset.", "Tap Delete all."],
+                         "actionableDeeplink": dict(link)}]},
+    ]
+    merged = order_actions(merge_duplicate_screens(acts))
+    assert [a["category"] for a in merged] == ["manual", "critical"]
+    reset = merged[1]
+    assert len(reset["stepGroups"]) == 1
+    assert reset["stepGroups"][0]["steps"] == ["Tap General management.", "Tap Reset.",
+                                               "Tap Delete all."]
+    assert g12_one_action_one_screen(merged, "p") == []
+
+
 # ----------------------------------------------------------------- deeplinks
 def test_resolver_never_invents_a_uri():
     r = DeeplinkResolver("data/deeplinks.json")
@@ -323,6 +352,80 @@ def test_batched_query_vectors_resolve_like_single_encodes():
         single, batched = r.resolve(d), r.resolve(d, qv=qv[d])
         assert (single.entry or {}).get("id") == (batched.entry or {}).get("id"), d
         assert abs(single.score - batched.score) < 1e-4, d
+
+
+def test_build_time_catalog_vectors_are_used_only_when_current(tmp_path):
+    """The build embeds the catalog so startup does not (7.1 s); never trust it stale."""
+    import shutil
+
+    import numpy as np
+
+    from engine.embed import get_encoder
+    fresh = DeeplinkResolver("data/deeplinks.json", encoder=get_encoder())
+    fresh.save_vectors(str(tmp_path / "catalog_vectors.npy"))
+    loaded = DeeplinkResolver("data/deeplinks.json", encoder=get_encoder(),
+                              vectors=str(tmp_path / "catalog_vectors.npy"))
+    assert np.array_equal(loaded._dense, fresh._dense)
+
+    # Vectors built from a different catalog text are rejected and recomputed.
+    stale = tmp_path / "stale"
+    stale.mkdir()
+    shutil.copy(tmp_path / "catalog_vectors.npy", stale / "catalog_vectors.npy")
+    (stale / "catalog_vectors.json").write_text(json.dumps({"fingerprint": "old", "rows": 1}))
+    assert loaded._load_vectors(str(stale / "catalog_vectors.npy")) is None
+
+
+def test_clauses_split_only_where_a_second_problem_starts():
+    """ADR-021: 'and' inside one problem is not a boundary; 'Also,' is."""
+    from engine.cache import clauses
+    one = "My screen flickers and goes black whenever I open the phone"
+    assert clauses(one) == [one]
+    assert clauses("My screen is black. Also, the battery drains really fast.") == \
+        ["My screen is black.", "the battery drains really fast."]
+    assert clauses("The glass is cracked, and the touch does not respond at the edges") == \
+        ["The glass is cracked", "the touch does not respond at the edges"]
+    # Fragments too short to be a complaint are not looked up on their own.
+    assert clauses("Screen is black. Help!") == ["Screen is black."]
+
+
+def test_step_target_reads_the_screen_the_steps_open():
+    """ADR-022: the source's own navigation names the screen the model often does not."""
+    from engine.cold import step_target
+    # A switch keeps its verb; a screen is phrased the way the catalog phrases it.
+    assert step_target(["Go to Settings, tap Display, and then tap the switch next to "
+                        "Touch sensitivity."]) == "enable Touch sensitivity"
+    assert step_target(["Go to Settings, tap Connections, and then tap Wi-Fi."]) == \
+        "open the Wi-Fi settings page"
+    assert step_target(["Go to Settings > Security and privacy > Screen lock and biometrics, "
+                        "and then enter your PIN."]) == \
+        "open the Screen lock and biometrics settings page"
+    # Menus every path crosses, confirmation buttons and options picked on a
+    # screen ("Select Buttons") are never the target.
+    assert step_target(["Navigate to and open Settings.", "Tap General management.",
+                        "Tap Reset.", "Tap Factory data reset.", "Tap Delete all."]) == \
+        "open the Factory data reset settings page"
+    assert step_target(["Go to Settings, tap Display, and then tap Navigation bar.",
+                        "Select Buttons to turn off full screen gestures."]) == \
+        "open the Navigation bar settings page"
+    assert step_target(["Press and hold the Power button.", "Tap Restart."]) is None
+
+
+def test_article_plans_match_the_same_document_and_keep_the_first_plan():
+    """ADR-019: exact and reformatted articles map to their compiled plan."""
+    from engine.articles import ArticlePlans
+    lib = {p["id"]: p for p in json.load(open("artifacts/plan_library.json"))["plans"]}
+    rows = json.load(open("data/siis_responses.json", encoding="utf-8"))["responses"]
+    a = ArticlePlans(lib, rows)
+    blank = next(r["siis_response"] for r in rows if r["siis_response"]["title"].startswith("Blank"))
+    assert a.compiled(blank["content"])["doc"] == blank["title"]
+    assert a.compiled(blank["content"].upper() + "\nPlease contact support.")["doc"] == blank["title"]
+    assert a.compiled("Open Settings. Tap Battery. Tap Adaptive battery.") is None
+
+    assert a.recall("new article") is None
+    first = [{"title": "first"}]
+    assert a.remember("new article", first) is first
+    assert a.remember("new  article ", [{"title": "second"}]) is first   # same text, respaced
+    assert a.recall("new article") is first
 
 
 def test_compiled_artifacts_are_reproducible(tmp_path):
